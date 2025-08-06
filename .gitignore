@@ -1,19 +1,21 @@
-# Node + Build output
+# Node.js
 node_modules/
+
+# Build output
 dist/
 *.tar.gz
 
-# macOS files
-.DS_Store
-
-# Local dev environment
+# Local dev env
 .env
 
-# If you had a backend/server previously
+# OS
+.DS_Store
+
+# Backend (if removed)
 server/
 drizzle.config.ts
 drizzle/
 migrations/
 
-# Optional: Ignore Vite config variants (if you don’t want to track them)
+# Vite configs (optional, if you use .dev, .prod, etc.)
 vite.config.ts.*
