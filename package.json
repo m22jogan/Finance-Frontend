@@ -23,7 +23,8 @@
     "@radix-ui/react-tooltip": "^1.0.5",
     "recharts": "^2.7.2",
     "class-variance-authority": "^0.7.0",
-    "@radix-ui/react-select": "^1.0.5"
+    "@radix-ui/react-select": "^1.0.5",
+    "tailwind-merge": "^2.2.1"
 
   },
   "devDependencies": {
