@@ -1,7 +1,19 @@
-node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
+# Node + Build output
+node_modules/
+dist/
 *.tar.gz
+
+# macOS files
+.DS_Store
+
+# Local dev environment
 .env
+
+# If you had a backend/server previously
+server/
+drizzle.config.ts
+drizzle/
+migrations/
+
+# Optional: Ignore Vite config variants (if you don’t want to track them)
+vite.config.ts.*
