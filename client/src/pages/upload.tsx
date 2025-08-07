@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  CloudUpload, 
+  UploadCloud, 
   FileText, 
   CheckCircle, 
   AlertCircle, 
