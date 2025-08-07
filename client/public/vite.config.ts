@@ -2,9 +2,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "url"; // Correct import for path resolution
 
-// Use this for reliable path resolution
+// A reliable way to get the current directory name
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // Use the path.resolve function with __dirname for an absolute path
+      // Use absolute path resolution
       "@": path.resolve(__dirname, "src"),
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
