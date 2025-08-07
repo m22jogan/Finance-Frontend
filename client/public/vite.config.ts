@@ -2,9 +2,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { fileURLToPath } from "url"; // <--- Add this import
+import { fileURLToPath } from "url";
 
-// Use this to resolve the path correctly in Vercel's environment
+// Use this for reliable path resolution
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
@@ -12,9 +12,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"), // <--- Add './' to the path
-      "@shared": path.resolve(__dirname, "./shared"), // <--- Add './' to the path
-      "@assets": path.resolve(__dirname, "./attached_assets"), // <--- Add './' to the path
+      // Use the path.resolve function with __dirname for an absolute path
+      "@": path.resolve(__dirname, "src"),
+      "@shared": path.resolve(__dirname, "shared"),
+      "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
   build: {
