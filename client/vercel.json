@@ -9,12 +9,10 @@
   ],
   "routes": [
     {
-      "src": "/assets/(.*)",
-      "headers": { "Cache-Control": "s-maxage=31536000, immutable" },
-      "dest": "/assets/$1"
+      "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
+      "src": "/.*",
       "dest": "/index.html"
     }
   ]
