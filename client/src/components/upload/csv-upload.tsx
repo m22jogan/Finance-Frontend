@@ -162,7 +162,7 @@ export default function CsvUpload() {
             ) : status === "error" ? (
               <AlertCircle className="text-red-600 text-xl" />
             ) : (
-              <CloudUpload className="text-primary text-xl" />
+              <UploadCloud className="text-primary text-xl" />
             )}
           </div>
           
