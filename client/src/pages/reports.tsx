@@ -25,15 +25,15 @@ export default function Reports() {
   const [timeRange, setTimeRange] = useState("6months");
   const [reportType, setReportType] = useState("spending-trends");
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
-  });
+});
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ["/api/categories"],
-  });
+  const { data: categories = [] } = useQuery<Category[]>({
+  queryKey: ["/api/categories"],
+});
 
-  const { data: summary } = useQuery({
+  const { data: summary } = useQuery<Category[]>({
     queryKey: ["/api/analytics/summary"],
   });
 
