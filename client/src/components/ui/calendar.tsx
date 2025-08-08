@@ -52,12 +52,15 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
-        ),
+        // Corrected structure: Nest IconLeft and IconRight under the 'Icon' key
+        Icon: {
+          Left: ({ className, ...props }) => (
+            <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
+          ),
+          Right: ({ className, ...props }) => (
+            <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+          ),
+        },
       }}
       {...props}
     />
