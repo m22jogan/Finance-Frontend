@@ -22,9 +22,9 @@ export default function Budgets() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: budgets = [], isLoading } = useQuery({
-    queryKey: ["/api/budgets"],
-  });
+const { data: budgets = [], isLoading } = useQuery<Budget[]>({
+  queryKey: ["/api/budgets"],
+});
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
