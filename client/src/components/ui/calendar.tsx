@@ -1,6 +1,6 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker } from "react-day-picker" // This is react-day-picker v9 or higher
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -52,13 +52,13 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        // Corrected structure: Nest IconLeft and IconRight under the 'Icon' key
+        // Correct structure for react-day-picker v9+
         Icon: {
-          Left: ({ className, ...props }) => (
-            <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
+          Left: ({ className: iconClassName, ...iconProps }) => (
+            <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...iconProps} />
           ),
-          Right: ({ className, ...props }) => (
-            <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+          Right: ({ className: iconClassName, ...iconProps }) => (
+            <ChevronRight className={cn("h-4 w-4", iconClassName)} {...iconProps} />
           ),
         },
       }}
