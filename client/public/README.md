@@ -1,1 +1,0 @@
-# Static files go here
