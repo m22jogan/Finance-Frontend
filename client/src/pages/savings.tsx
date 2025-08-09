@@ -19,9 +19,9 @@ export default function Savings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: goals = [], isLoading } = useQuery({
+  const { data: goals = [], isLoading } = useQuery<SavingsGoal[]>({
     queryKey: ["/api/savings-goals"],
-  });
+});
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {

@@ -202,7 +202,7 @@ export default function Upload() {
                   ) : uploadResult && !uploadResult.success ? (
                     <AlertCircle className="text-red-600 text-2xl" />
                   ) : (
-                    <CloudUpload className="text-primary text-2xl" />
+                    <UploadCloud className="text-primary text-2xl" />
                   )}
                 </div>
                 
