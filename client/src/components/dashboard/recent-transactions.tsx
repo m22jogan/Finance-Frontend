@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button"; // Import Button component
 import { 
   Utensils, 
   Car, 
   Gamepad2, 
   ShoppingCart, 
   PlusCircle,
-  Circle
+  Circle,
+  Plus // Import Plus icon
 } from "lucide-react";
 
 interface Transaction {
@@ -22,6 +24,7 @@ interface Transaction {
 interface RecentTransactionsProps {
   transactions: Transaction[];
   isLoading: boolean;
+  onAddTransactionClick: () => void; // New prop for the add transaction button click
 }
 
 const categoryIcons: Record<string, any> = {
@@ -40,7 +43,7 @@ const categoryColors: Record<string, string> = {
   "cat-5": "bg-emerald-500/10 text-emerald-600",
 };
 
-export default function RecentTransactions({ transactions, isLoading }: RecentTransactionsProps) {
+export default function RecentTransactions({ transactions, isLoading, onAddTransactionClick }: RecentTransactionsProps) {
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -104,11 +107,23 @@ export default function RecentTransactions({ transactions, isLoading }: RecentTr
     <Card className="bg-white dark:bg-gray-800" data-testid="recent-transactions">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Transactions</CardTitle>
-        <Link href="/transactions">
-          <a className="text-primary text-sm font-medium hover:underline" data-testid="view-all-transactions">
-            View All
-          </a>
-        </Link>
+        <div className="flex items-center gap-2"> {/* Container for buttons/links */}
+          <Link href="/transactions">
+            <a className="text-primary text-sm font-medium hover:underline" data-testid="view-all-transactions">
+              View All
+            </a>
+          </Link>
+          {/* New Add Transaction button */}
+          <Button 
+            size="sm" 
+            onClick={onAddTransactionClick} 
+            className="flex items-center gap-1"
+            data-testid="add-transaction-button-recent"
+          >
+            <Plus className="h-4 w-4" />
+            Add
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {transactions.length > 0 ? (
