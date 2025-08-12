@@ -12,7 +12,10 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const fullUrl = `${apiUrl}${url}`; // Construct the full URL here
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +32,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Get the base API URL from the environment variables
+    const apiUrl = import.meta.env.VITE_API_URL;
+    // Construct the full URL by combining the base URL and the query key path
+    const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
+
+    const res = await fetch(fullUrl, { // Use the full URL
       credentials: "include",
     });
 
@@ -44,6 +52,8 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // Your `queryKey` in useQuery hooks should now be simple strings or arrays,
+      // e.g., ["/api/transactions"]
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,

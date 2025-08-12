@@ -2,9 +2,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { fileURLToPath } from "url"; // Correct import for path resolution
+import { fileURLToPath } from "url";
 
-// A reliable way to get the current directory name
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
@@ -12,7 +11,6 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // Use absolute path resolution
       "@": path.resolve(__dirname, "src"),
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
@@ -26,6 +24,15 @@ export default defineConfig({
     fs: {
       strict: true,
       deny: ["**/.*"],
+    },
+    // Add this proxy configuration
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000", // Your local FastAPI server URL
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''), // Rewrites '/api/items' to '/items'
+      },
     },
   },
 });

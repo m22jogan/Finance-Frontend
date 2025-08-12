@@ -7,6 +7,12 @@
       "config": { "distDir": "dist" }
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://finance-backend-8mvf.onrender.com/api/$1"
+    }
+  ],
   "routes": [
     {
       "handle": "filesystem"
