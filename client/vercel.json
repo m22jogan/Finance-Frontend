@@ -12,14 +12,5 @@
       "source": "/api/(.*)",
       "destination": "https://finance-backend-8mvf.onrender.com/api/$1"
     }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
-    }
   ]
 }
