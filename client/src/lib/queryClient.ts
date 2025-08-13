@@ -1,3 +1,4 @@
+// client/src/lib/queryClient.ts
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
@@ -11,16 +12,41 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  // Add an optional userId parameter for explicit passing if needed,
+  // though typically it would come from an auth context.
+  userId?: string 
 ): Promise<Response> {
   const apiUrl = import.meta.env.VITE_API_URL;
-  const fullUrl = `${apiUrl}${url}`; // Construct the full URL here
-  
-  const res = await fetch(fullUrl, {
+  const fullUrl = `${apiUrl}${url}`;
+
+  // This is where you'd typically get the user ID from your authentication state
+  // For now, let's use a placeholder or a header.
+  // In a real app, this would come from a global auth context or token.
+  const tempUserId = localStorage.getItem('user_id_placeholder') || 'generated-user-id'; 
+  // For testing, you might set this in local storage, or get it from an actual auth token.
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    // Include the X-User-Id header for every request
+    "X-User-Id": userId || tempUserId, 
+  };
+
+  const options: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+    credentials: "include", // Important for cookies/credentials if your auth uses them
+  };
+  
+  // For FormData (e.g., CSV upload), Content-Type header should not be set manually
+  // as the browser sets it automatically with the correct boundary.
+  if (data instanceof FormData) {
+    delete headers['Content-Type'];
+    options.body = data; // Assign FormData directly
+  }
+
+
+  const res = await fetch(fullUrl, options);
 
   await throwIfResNotOk(res);
   return res;
@@ -32,12 +58,17 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get the base API URL from the environment variables
     const apiUrl = import.meta.env.VITE_API_URL;
-    // Construct the full URL by combining the base URL and the query key path
     const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
 
-    const res = await fetch(fullUrl, { // Use the full URL
+    // Ensure X-User-Id is passed for GET requests handled by default queryFn
+    const tempUserId = localStorage.getItem('user_id_placeholder') || 'generated-user-id';
+    const headers: HeadersInit = {
+      "X-User-Id": tempUserId,
+    };
+
+    const res = await fetch(fullUrl, {
+      headers,
       credentials: "include",
     });
 
@@ -52,8 +83,6 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Your `queryKey` in useQuery hooks should now be simple strings or arrays,
-      // e.g., ["/api/transactions"]
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
