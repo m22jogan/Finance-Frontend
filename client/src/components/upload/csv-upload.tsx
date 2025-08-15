@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { UploadCloud, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CsvUpload() {
@@ -18,7 +19,7 @@ export default function CsvUpload() {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append("file", file); // Must match FastAPI parameter
+      formData.append("file", file); // Must match FastAPI parameter name
 
       // Simulate progress
       const progressInterval = setInterval(() => {
@@ -26,19 +27,11 @@ export default function CsvUpload() {
       }, 100);
 
       try {
-        const response = await fetch("https://your-render-url.com/api/upload/csv", {
-          method: "POST",
-          body: formData, // Let browser set Content-Type automatically
-        });
-
+        const response = await apiRequest("POST", "/api/upload/csv", formData);
         clearInterval(progressInterval);
 
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
         setUploadProgress(100);
-        return response.json();
+        return await response.json();
       } catch (error: any) {
         clearInterval(progressInterval);
         throw error;
