@@ -5,7 +5,6 @@ import { Link } from "wouter";
 import { UploadCloud, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CsvUpload() {
@@ -19,19 +18,28 @@ export default function CsvUpload() {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append('file', file);
-      
+      formData.append("file", file); // Must match FastAPI parameter
+
       // Simulate progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 100);
 
       try {
-        const response = await apiRequest('POST', '/api/upload/csv', formData);
+        const response = await fetch("https://your-render-url.com/api/upload/csv", {
+          method: "POST",
+          body: formData, // Let browser set Content-Type automatically
+        });
+
         clearInterval(progressInterval);
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
         setUploadProgress(100);
         return response.json();
-      } catch (error) {
+      } catch (error: any) {
         clearInterval(progressInterval);
         throw error;
       }
@@ -44,7 +52,7 @@ export default function CsvUpload() {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/spending-by-category"] });
-      
+
       // Reset after success
       setTimeout(() => {
         setUploadedFile(null);
@@ -74,10 +82,12 @@ export default function CsvUpload() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
-    const csvFile = files.find(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
-    
+    const csvFile = files.find(
+      (file) => file.type === "text/csv" || file.name.endsWith(".csv")
+    );
+
     if (csvFile) {
       handleFileSelect(csvFile);
     } else {
@@ -90,7 +100,7 @@ export default function CsvUpload() {
   };
 
   const handleFileSelect = (file: File) => {
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
         description: "Please upload a file smaller than 10MB",
@@ -110,9 +120,7 @@ export default function CsvUpload() {
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+    if (file) handleFileSelect(file);
   };
 
   const getUploadStatus = () => {
@@ -129,7 +137,10 @@ export default function CsvUpload() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Quick Upload</CardTitle>
         <Link href="/upload">
-          <a className="text-primary text-sm font-medium hover:underline" data-testid="full-upload-page">
+          <a
+            className="text-primary text-sm font-medium hover:underline"
+            data-testid="full-upload-page"
+          >
             Full Upload Page
           </a>
         </Link>
@@ -155,7 +166,7 @@ export default function CsvUpload() {
             className="hidden"
             data-testid="file-input"
           />
-          
+
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
             {status === "success" ? (
               <CheckCircle className="text-green-600 text-xl" />
@@ -165,24 +176,22 @@ export default function CsvUpload() {
               <UploadCloud className="text-primary text-xl" />
             )}
           </div>
-          
+
           <h4 className="text-lg font-medium mb-2" data-testid="upload-title">
-            {status === "success" ? "Upload Complete!" : "Drop your CSV file here"}
+            {status === "success"
+              ? "Upload Complete!"
+              : "Drop your CSV file here"}
           </h4>
-          
+
           <p className="text-gray-600 dark:text-gray-400 mb-4" data-testid="upload-description">
-            {status === "success" 
+            {status === "success"
               ? "Your transactions have been processed"
-              : "or click to browse files"
-            }
+              : "or click to browse files"}
           </p>
-          
+
           {status === "idle" && (
             <>
-              <Button 
-                onClick={handleButtonClick}
-                data-testid="choose-file-button"
-              >
+              <Button onClick={handleButtonClick} data-testid="choose-file-button">
                 Choose File
               </Button>
               <p className="text-xs text-gray-500 mt-2">
@@ -191,7 +200,7 @@ export default function CsvUpload() {
             </>
           )}
         </div>
-        
+
         {uploadedFile && (status === "uploading" || status === "success") && (
           <div className="mt-4 space-y-2" data-testid="upload-progress">
             <div className="flex items-center justify-between">
