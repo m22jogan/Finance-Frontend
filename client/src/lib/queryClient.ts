@@ -1,6 +1,9 @@
 // client/src/lib/queryClient.ts
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+/**
+ * Throws an error if the fetch response is not OK (status outside 200-299)
+ */
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -8,50 +11,50 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/**
+ * Generic API request helper
+ * - Supports JSON and FormData
+ * - Automatically sets X-User-Id header
+ * - Handles credentials
+ */
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
-  // Add an optional userId parameter for explicit passing if needed,
-  // though typically it would come from an auth context.
-  userId?: string 
+  data?: unknown,
+  userId?: string
 ): Promise<Response> {
   const apiUrl = import.meta.env.VITE_API_URL;
   const fullUrl = `${apiUrl}${url}`;
 
-  // This is where you'd typically get the user ID from your authentication state
-  // For now, let's use a placeholder or a header.
-  // In a real app, this would come from a global auth context or token.
-  const tempUserId = localStorage.getItem('user_id_placeholder') || 'generated-user-id'; 
-  // For testing, you might set this in local storage, or get it from an actual auth token.
+  const tempUserId = localStorage.getItem("user_id_placeholder") || "generated-user-id";
 
+  // Base headers
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    // Include the X-User-Id header for every request
-    "X-User-Id": userId || tempUserId, 
+    "X-User-Id": userId || tempUserId,
   };
 
   const options: RequestInit = {
     method,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include", // Important for cookies/credentials if your auth uses them
+    credentials: "include",
   };
-  
-  // For FormData (e.g., CSV upload), Content-Type header should not be set manually
-  // as the browser sets it automatically with the correct boundary.
+
   if (data instanceof FormData) {
-    delete headers['Content-Type'];
-    options.body = data; // Assign FormData directly
+    // FormData: let browser set Content-Type
+    options.body = data;
+  } else if (data) {
+    headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(data);
   }
 
-
   const res = await fetch(fullUrl, options);
-
   await throwIfResNotOk(res);
   return res;
 }
 
+/**
+ * Default query function generator for react-query
+ */
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
@@ -61,8 +64,7 @@ export const getQueryFn: <T>(options: {
     const apiUrl = import.meta.env.VITE_API_URL;
     const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
 
-    // Ensure X-User-Id is passed for GET requests handled by default queryFn
-    const tempUserId = localStorage.getItem('user_id_placeholder') || 'generated-user-id';
+    const tempUserId = localStorage.getItem("user_id_placeholder") || "generated-user-id";
     const headers: HeadersInit = {
       "X-User-Id": tempUserId,
     };
@@ -80,6 +82,9 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+/**
+ * React Query Client
+ */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
