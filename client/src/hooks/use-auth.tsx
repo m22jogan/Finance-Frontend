@@ -34,6 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Login failed");
       }
       const data = await res.json();
+
+      // **Critical fix: Save the user ID to localStorage**
+      localStorage.setItem("user_id_placeholder", data.id);
+
       setUser({ id: data.id, email: data.email });
       navigate("/dashboard");
     } catch (error) {
