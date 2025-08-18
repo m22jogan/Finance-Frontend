@@ -1,42 +1,55 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 
-// Define the shape of your authentication context
 interface AuthContextType {
-  userId: string | undefined;
-  // You can add more properties and functions here, like `login`, `logout`, `isLoading`
+  userId?: string;
+  email?: string;
 }
 
-// Create the context with the defined type
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Define the provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [email, setEmail] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      // Replace this with your actual authentication logic
-      const fetchedUserId = "user_12345";
-      setUserId(fetchedUserId);
+    const loadUser = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/users/me`
+        );
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch user: ${res.status}`);
+        }
+
+        const data = await res.json();
+        setUserId(data.id);
+        setEmail(data.email);
+      } catch (err) {
+        console.error("Error loading user:", err);
+
+        // fallback: dev-only
+        if (import.meta.env.DEV) {
+          setUserId("user_12345");
+          setEmail("demo@example.com");
+        }
+      }
     };
 
-    fetchUser();
+    loadUser();
   }, []);
 
-  const value: AuthContextType = { userId };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ userId, email }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Define the custom hook to use the authentication context
-export function useAuth(): AuthContextType {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

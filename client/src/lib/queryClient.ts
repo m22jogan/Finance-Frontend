@@ -14,24 +14,25 @@ async function throwIfResNotOk(res: Response) {
 /**
  * Generic API request helper
  * - Supports JSON and FormData
- * - Automatically sets X-User-Id header
+ * - Automatically sets X-User-Id header if available
  * - Handles credentials
  */
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown,
-  userId?: string
+  userId?: string // <-- now aligned with your CSV upload
 ): Promise<Response> {
   const apiUrl = import.meta.env.VITE_API_URL;
   const fullUrl = `${apiUrl}${url}`;
 
-  const tempUserId = localStorage.getItem("user_id_placeholder") || "generated-user-id";
+  const storedUserId = localStorage.getItem("user_id_placeholder");
 
   // Base headers
-  const headers: HeadersInit = {
-    "X-User-Id": userId || tempUserId,
-  };
+  const headers: HeadersInit = {};
+  if (userId ?? storedUserId) {
+    headers["X-User-Id"] = userId ?? storedUserId!;
+  }
 
   const options: RequestInit = {
     method,
@@ -64,10 +65,11 @@ export const getQueryFn: <T>(options: {
     const apiUrl = import.meta.env.VITE_API_URL;
     const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
 
-    const tempUserId = localStorage.getItem("user_id_placeholder") || "generated-user-id";
-    const headers: HeadersInit = {
-      "X-User-Id": tempUserId,
-    };
+    const storedUserId = localStorage.getItem("user_id_placeholder");
+    const headers: HeadersInit = {};
+    if (storedUserId) {
+      headers["X-User-Id"] = storedUserId;
+    }
 
     const res = await fetch(fullUrl, {
       headers,
