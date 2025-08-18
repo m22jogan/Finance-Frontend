@@ -7,6 +7,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function CsvUpload() {
   const [isDragging, setIsDragging] = useState(false);
@@ -15,6 +16,7 @@ export default function CsvUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const {userId} = useAuth();
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -27,7 +29,7 @@ export default function CsvUpload() {
       }, 100);
 
       try {
-        const response = await apiRequest("POST", "/api/upload/csv", formData);
+        const response = await apiRequest("POST", "/api/upload/csv", formData, userId);
         clearInterval(progressInterval);
 
         setUploadProgress(100);
