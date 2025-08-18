@@ -1,46 +1,53 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter"; // Import useLocation for redirection
 
-interface AuthContextType {
-  userId?: string;
-  email?: string;
+interface User {
+  id: string;
+  email: string;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+  user: User | undefined;
+  loading: boolean;
+}
+
+// Define a placeholder or default value for the context
+const AuthContext = createContext<AuthContextType>({
+  user: undefined,
+  loading: true,
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | undefined>(undefined);
-  const [email, setEmail] = useState<string | undefined>(undefined);
+  const [user, setUser] = useState<User | undefined>();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [_, navigate] = useLocation();
 
   useEffect(() => {
-    const loadUser = async () => {
+    const fetchUser = async () => {
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/users/me`
-        );
-
+        const res = await apiRequest("GET", "/api/users/me");
         if (!res.ok) {
-          throw new Error(`Failed to fetch user: ${res.status}`);
+          // Handle unauthenticated state
+          navigate("/login");
+        } else {
+          const data = await res.json();
+          setUser({ id: data.id, email: data.email });
         }
-
-        const data = await res.json();
-        setUserId(data.id);
-        setEmail(data.email);
-      } catch (err) {
-        console.error("Error loading user:", err);
-
-        // fallback: dev-only
-        if (import.meta.env.DEV) {
-          setUserId("user_12345");
-          setEmail("demo@example.com");
-        }
+      } catch (error) {
+        console.error("Failed to load user:", error);
+        // Redirect to login on network or other errors
+        navigate("/login");
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadUser();
-  }, []);
+    fetchUser();
+  }, [navigate]);
 
   return (
-    <AuthContext.Provider value={{ userId, email }}>
+    <AuthContext.Provider value={{ user, loading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -48,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

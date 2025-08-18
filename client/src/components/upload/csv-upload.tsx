@@ -7,7 +7,8 @@ import { apiRequest } from "@/lib/queryClient";
 export default function CsvUpload() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const { id: userId } = user || {}; // Destructure and rename id to userId
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {

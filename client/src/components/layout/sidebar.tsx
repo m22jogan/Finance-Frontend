@@ -7,8 +7,9 @@ import {
   Upload,
   Wallet,
   BarChart,
-  User
+  User,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
@@ -21,18 +22,23 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user, loading } = useAuth();
+  const { email } = user || {}; // Use destructuring with a fallback for safety
+
+  // Determine a simple "name" from the email for display
+  const userName = email?.split("@")[0] || "User";
 
   return (
     <aside className="hidden md:flex md:flex-col md:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
         <h1 className="text-xl font-bold text-primary">FinanceFlow</h1>
       </div>
-      
+
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navigation.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.href || (item.href === "/dashboard" && location === "/");
-          
+
           return (
             <Link key={item.name} href={item.href}>
               <a
@@ -51,15 +57,19 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      
+
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-semibold">
             <User className="h-5 w-5" />
           </div>
           <div className="ml-3">
-            <p className="text-sm font-medium" data-testid="user-name">Demo User</p>
-            <p className="text-xs text-gray-500" data-testid="user-email">demo@example.com</p>
+            <p className="text-sm font-medium" data-testid="user-name">
+              {userName}
+            </p>
+            <p className="text-xs text-gray-500" data-testid="user-email">
+              {email}
+            </p>
           </div>
         </div>
       </div>
