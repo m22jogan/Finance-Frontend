@@ -1,9 +1,6 @@
-// client/src/lib/queryClient.ts
+// src/lib/queryClient.ts
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-/**
- * Throws an error if the fetch response is not OK (status outside 200-299)
- */
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -11,37 +8,31 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-/**
- * Generic API request helper
- * - Supports JSON and FormData
- * - Automatically sets X-User-Id header if available
- * - Handles credentials
- */
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown,
-  userId?: string // <-- now aligned with your CSV upload
+  data?: unknown
 ): Promise<Response> {
   const apiUrl = import.meta.env.VITE_API_URL;
   const fullUrl = `${apiUrl}${url}`;
 
-  const storedUserId = localStorage.getItem("user_id_placeholder");
+  // Get the token from local storage
+  const token = localStorage.getItem("auth_token");
 
-  // Base headers
   const headers: HeadersInit = {};
-  if (userId ?? storedUserId) {
-    headers["X-User-Id"] = userId ?? storedUserId!;
+  // If the token exists, add the Authorization header
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   const options: RequestInit = {
     method,
     headers,
+    // We can keep 'include' for now, but it's not strictly necessary for bearer tokens
     credentials: "include",
   };
 
   if (data instanceof FormData) {
-    // FormData: let browser set Content-Type
     options.body = data;
   } else if (data) {
     headers["Content-Type"] = "application/json";
@@ -53,9 +44,6 @@ export async function apiRequest(
   return res;
 }
 
-/**
- * Default query function generator for react-query
- */
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
@@ -65,10 +53,10 @@ export const getQueryFn: <T>(options: {
     const apiUrl = import.meta.env.VITE_API_URL;
     const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
 
-    const storedUserId = localStorage.getItem("user_id_placeholder");
+    const token = localStorage.getItem("auth_token");
     const headers: HeadersInit = {};
-    if (storedUserId) {
-      headers["X-User-Id"] = storedUserId;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const res = await fetch(fullUrl, {
@@ -84,9 +72,6 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
-/**
- * React Query Client
- */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
