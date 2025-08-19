@@ -34,7 +34,7 @@ export default function Upload() {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append('csvFile', file);
+      formData.append('file', file);
       
       // Simulate progress
       const progressInterval = setInterval(() => {
