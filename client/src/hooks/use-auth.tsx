@@ -54,12 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await apiRequest("GET", "/api/users/me");
         if (res.ok) {
           const data = await res.json();
+          // Ensure user ID is persisted for subsequent requests
+          if (data?.id) {
+            localStorage.setItem("user_id_placeholder", data.id);
+          }
           setUser({ id: data.id, email: data.email });
         } else {
+          // Clear any stale user id if backend says not ok
+          localStorage.removeItem("user_id_placeholder");
           setUser(undefined);
         }
       } catch (error) {
         console.error("Failed to load user:", error);
+        // Clear any stale user id on error (e.g., 401)
+        localStorage.removeItem("user_id_placeholder");
         setUser(undefined);
       } finally {
         setLoading(false);
