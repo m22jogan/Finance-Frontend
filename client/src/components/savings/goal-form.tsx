@@ -16,25 +16,48 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import React from "react";
 
+// -------------------- Schema --------------------
 const goalFormSchema = z.object({
   name: z.string().min(1, "Goal name is required"),
-  targetAmount: z.string().min(1, "Target amount is required").refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, "Target amount must be a positive number"),
-  currentAmount: z.string().refine((val) => val === "" || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0), "Current amount must be a positive number or empty"),
+  targetAmount: z
+    .string()
+    .min(1, "Target amount is required")
+    .refine(
+      (val: string) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+      "Target amount must be a positive number"
+    ),
+  currentAmount: z
+    .string()
+    .refine(
+      (val: string) =>
+        val === "" || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0),
+      "Current amount must be a positive number or empty"
+    ),
   targetDate: z.date().optional(),
 });
 
 type GoalFormData = z.infer<typeof goalFormSchema>;
+
+// -------------------- Types --------------------
+interface Goal {
+  id: string;
+  name: string;
+  targetAmount: string;
+  currentAmount: string;
+  targetDate?: string | null;
+}
 
 interface GoalFormProps {
   onClose?: () => void;
   goalId?: string;
 }
 
+// -------------------- Component --------------------
 export default function GoalForm({ onClose, goalId }: GoalFormProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: goal } = useQuery({
+  const { data: goal } = useQuery<Goal>({
     queryKey: ["/api/savings-goals", goalId],
     enabled: !!goalId,
   });
@@ -54,28 +77,34 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
       const goalData = {
         name: data.name,
         targetAmount: parseFloat(data.targetAmount).toString(),
-        currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : "0",
+        currentAmount: data.currentAmount
+          ? parseFloat(data.currentAmount).toString()
+          : "0",
         targetDate: data.targetDate?.toISOString() || null,
       };
-      
+
       if (goalId) {
-        return apiRequest('PUT', `/api/savings-goals/${goalId}`, goalData);
+        return apiRequest("PUT", `/api/savings-goals/${goalId}`, goalData);
       } else {
-        return apiRequest('POST', '/api/savings-goals', goalData);
+        return apiRequest("POST", "/api/savings-goals", goalData);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
       toast({
         title: goalId ? "Goal updated" : "Goal created",
-        description: `Savings goal has been successfully ${goalId ? 'updated' : 'created'}`,
+        description: `Savings goal has been successfully ${
+          goalId ? "updated" : "created"
+        }`,
       });
       onClose?.();
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || `Failed to ${goalId ? 'update' : 'create'} savings goal`,
+        description:
+          error.message ||
+          `Failed to ${goalId ? "update" : "create"} savings goal`,
         variant: "destructive",
       });
     },
@@ -106,10 +135,15 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <Target className="h-5 w-5" />
-          {goalId ? 'Edit Savings Goal' : 'Create Savings Goal'}
+          {goalId ? "Edit Savings Goal" : "Create Savings Goal"}
         </CardTitle>
         {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose} data-testid="close-goal-form">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            data-testid="close-goal-form"
+          >
             <X className="h-4 w-4" />
           </Button>
         )}
@@ -117,6 +151,7 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Goal Name */}
             <FormField
               control={form.control}
               name="name"
@@ -124,9 +159,9 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
                 <FormItem>
                   <FormLabel>Goal Name</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="e.g., Emergency Fund, Vacation, New Car" 
-                      {...field} 
+                    <Input
+                      placeholder="e.g., Emergency Fund, Vacation, New Car"
+                      {...field}
                       data-testid="goal-name-input"
                     />
                   </FormControl>
@@ -135,6 +170,7 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
               )}
             />
 
+            {/* Target Amount */}
             <FormField
               control={form.control}
               name="targetAmount"
@@ -142,11 +178,11 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
                 <FormItem>
                   <FormLabel>Target Amount</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
+                    <Input
+                      type="number"
+                      placeholder="0.00"
                       step="0.01"
-                      {...field} 
+                      {...field}
                       data-testid="goal-target-amount-input"
                     />
                   </FormControl>
@@ -155,6 +191,7 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
               )}
             />
 
+            {/* Current Amount */}
             <FormField
               control={form.control}
               name="currentAmount"
@@ -162,11 +199,11 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
                 <FormItem>
                   <FormLabel>Current Amount</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
+                    <Input
+                      type="number"
+                      placeholder="0.00"
                       step="0.01"
-                      {...field} 
+                      {...field}
                       data-testid="goal-current-amount-input"
                     />
                   </FormControl>
@@ -175,6 +212,7 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
               )}
             />
 
+            {/* Target Date */}
             <FormField
               control={form.control}
               name="targetDate"
@@ -206,9 +244,7 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date()
-                        }
+                        disabled={(date) => date < new Date()}
                         initialFocus
                       />
                     </PopoverContent>
@@ -220,10 +256,15 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
 
             {/* Progress Preview */}
             {targetAmount > 0 && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg" data-testid="goal-progress-preview">
+              <div
+                className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                data-testid="goal-progress-preview"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Progress Preview</span>
-                  <span className="text-sm font-semibold">{progress.toFixed(1)}%</span>
+                  <span className="text-sm font-semibold">
+                    {progress.toFixed(1)}%
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
                   <div
@@ -243,22 +284,26 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
               </div>
             )}
 
+            {/* Buttons */}
             <div className="flex gap-2 pt-4">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="flex-1"
                 disabled={createMutation.isPending}
                 data-testid="submit-goal-form"
               >
-                {createMutation.isPending 
-                  ? (goalId ? 'Updating...' : 'Creating...') 
-                  : (goalId ? 'Update Goal' : 'Create Goal')
-                }
+                {createMutation.isPending
+                  ? goalId
+                    ? "Updating..."
+                    : "Creating..."
+                  : goalId
+                  ? "Update Goal"
+                  : "Create Goal"}
               </Button>
               {onClose && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={onClose}
                   data-testid="cancel-goal-form"
                 >
