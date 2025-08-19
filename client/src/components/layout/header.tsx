@@ -30,12 +30,8 @@ export default function Header() {
   const toggleTheme = () => {
     const newTheme = !isDark;
     setIsDark(newTheme);
-    localStorage.setItem("darkMode", newTheme.toString());
-    if (newTheme) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    localStorage.setItem("darkMode", String(newTheme));
+    document.documentElement.classList.toggle("dark", newTheme);
   };
 
   const pageName = pageNames[location] || "Dashboard";
@@ -60,10 +56,7 @@ export default function Header() {
 
         {/* Right side: user + actions */}
         <div className="flex items-center space-x-4">
-          <span className="text-gray-700 dark:text-gray-200 text-sm hidden sm:inline">
-            {user?.email}
-          </span>
-
+          {/* Notifications */}
           <Button
             variant="ghost"
             size="icon"
@@ -71,9 +64,11 @@ export default function Header() {
             data-testid="notifications-button"
           >
             <Bell className="h-5 w-5" />
+            {/* You can make this conditional if notifications exist */}
             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
           </Button>
 
+          {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -83,15 +78,21 @@ export default function Header() {
             {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            data-testid="logout-button"
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="sr-only">Log out</span>
-          </Button>
+          {/* User Section */}
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-700 dark:text-gray-200 text-sm hidden sm:inline">
+              {user?.email}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={logout}
+              data-testid="logout-button"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="sr-only">Log out</span>
+            </Button>
+          </div>
         </div>
       </div>
     </header>
