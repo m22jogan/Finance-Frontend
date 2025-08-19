@@ -1,4 +1,4 @@
-// src/lib/queryClient.ts
+// src/lib/queryClient.ts (No changes needed)
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
@@ -28,7 +28,6 @@ export async function apiRequest(
   const options: RequestInit = {
     method,
     headers,
-    // We can keep 'include' for now, but it's not strictly necessary for bearer tokens
     credentials: "include",
   };
 

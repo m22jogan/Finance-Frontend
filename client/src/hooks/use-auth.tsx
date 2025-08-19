@@ -4,50 +4,50 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
+// CORRECTED: Add the 'token' property to the User interface
 interface User {
   id: string;
   email: string;
+  token?: string; // It should be optional since it might not always exist (e.g., during loading or before login)
 }
 
 interface AuthContextType {
   user: User | undefined;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void; // Add logout to the context type
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: undefined,
   loading: true,
   login: async () => {},
-  logout: () => {}, // Add a default empty function
+  logout: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Pass the full User object, including the token, to the state
   const [user, setUser] = useState<User | undefined>();
   const [loading, setLoading] = useState<boolean>(true);
   const [_, navigate] = useLocation();
 
-  // 1. Update the login function
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Endpoint is now /api/auth/login
       const res = await apiRequest("POST", "/api/auth/login", { email, password });
       if (!res.ok) {
         throw new Error("Login failed");
       }
-      const data = await res.json(); // Expects { user: { id, email }, token: "..." }
+      const data = await res.json();
 
-      // Save the JWT to localStorage
+      // Store the token in localStorage and also in the state
       localStorage.setItem("auth_token", data.token);
 
-      // Set user from the nested user object in the response
-      setUser({ id: data.user.id, email: data.user.email });
+      // Set the full user object including the token
+      setUser({ id: data.user.id, email: data.user.email, token: data.token });
       navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
-      // Clean up any stale token on login failure
       localStorage.removeItem("auth_token");
       throw error;
     } finally {
@@ -55,46 +55,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 2. Add a logout function
   const logout = () => {
     localStorage.removeItem("auth_token");
     setUser(undefined);
     navigate("/login");
   };
 
-  // 3. Update the initial user fetch logic
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("auth_token");
       if (!token) {
-        // If there's no token, we're definitely not logged in.
         setUser(undefined);
         setLoading(false);
         return;
       }
 
       try {
-        // With a token, try to get the user's profile
-        // apiRequest will automatically add the 'Authorization' header
         const res = await apiRequest("GET", "/api/auth/me");
         if (res.ok) {
           const data = await res.json();
-          setUser({ id: data.id, email: data.email });
+          // When fetching, also include the token in the user state
+          setUser({ id: data.id, email: data.email, token });
         } else {
-          // If the token is invalid (e.g., expired), log out
           logout();
         }
       } catch (error) {
         console.error("Failed to load user:", error);
-        // Any error with the token means we should log out
         logout();
       } finally {
         setLoading(false);
       }
     };
     fetchUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // The empty dependency array is correct here
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>

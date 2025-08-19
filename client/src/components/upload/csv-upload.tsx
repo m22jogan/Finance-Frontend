@@ -1,3 +1,5 @@
+// src/components/upload/csv-upload.tsx
+
 import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,11 +10,11 @@ export default function CsvUpload() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { user } = useAuth();
-  const { id: userId } = user || {}; // Destructure and rename id to userId
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      if (!userId) throw new Error("User not authenticated");
+      // Check if a token exists before attempting to upload
+      if (!user?.token) throw new Error("User not authenticated");
 
       const formData = new FormData();
       formData.append("file", file);
@@ -23,7 +25,8 @@ export default function CsvUpload() {
       }, 100);
 
       try {
-        const response = await apiRequest("POST", "/api/upload/csv", formData, userId);
+        // Corrected line: removed userId from the arguments as it's handled in apiRequest
+        const response = await apiRequest("POST", "/api/upload/csv", formData);
         clearInterval(progressInterval);
 
         setUploadProgress(100);
@@ -64,10 +67,10 @@ export default function CsvUpload() {
       />
       <Button
         onClick={handleButtonClick}
-        disabled={!userId || uploadMutation.isPending}
+        disabled={!user?.token || uploadMutation.isPending}
         data-testid="choose-file-button"
       >
-        {userId ? "Choose File" : "Loading user..."}
+        {user?.token ? "Choose File" : "Loading user..."}
       </Button>
       {uploadMutation.isPending && (
         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
