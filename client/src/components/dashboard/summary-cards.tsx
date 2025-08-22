@@ -1,11 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Wallet, CreditCard, PiggyBank, TrendingUp } from "lucide-react";
 
+interface SavingsGoal {
+  id: string;
+  name: string;
+  progress: number;
+}
+
 interface SummaryData {
   totalBalance: number;
   monthlySpending: number;
   savingsProgress: number;
   budgetRemaining: number;
+  savingsGoals: SavingsGoal[];
 }
 
 interface SummaryCardsProps {
