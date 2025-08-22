@@ -14,16 +14,19 @@ interface SummaryCardsProps {
 
 export default function SummaryCards({ summary }: SummaryCardsProps) {
   const formatCurrency = (amount: number) => {
+    // This function is fine, the problem is what we pass to it.
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
   };
 
+  // UPDATED: We now safely handle potentially null/undefined values from the API
   const cards = [
     {
       title: "Total Balance",
-      value: summary ? formatCurrency(summary.totalBalance) : "$0.00",
+      // Use optional chaining (?.) and nullish coalescing (??) for safety
+      value: formatCurrency(summary?.totalBalance ?? 0),
       icon: Wallet,
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
@@ -34,7 +37,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     },
     {
       title: "Monthly Spending",
-      value: summary ? formatCurrency(summary.monthlySpending) : "$0.00",
+      value: formatCurrency(summary?.monthlySpending ?? 0),
       icon: CreditCard,
       iconBg: "bg-red-500/10",
       iconColor: "text-red-500",
@@ -45,7 +48,8 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     },
     {
       title: "Savings Progress",
-      value: summary ? `${summary.savingsProgress}%` : "0%",
+      // Special handling for the percentage value
+      value: `${summary?.savingsProgress ?? 0}%`,
       icon: PiggyBank,
       iconBg: "bg-green-500/10",
       iconColor: "text-green-500",
@@ -56,7 +60,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     },
     {
       title: "Budget Remaining",
-      value: summary ? formatCurrency(summary.budgetRemaining) : "$0.00",
+      value: formatCurrency(summary?.budgetRemaining ?? 0),
       icon: TrendingUp,
       iconBg: "bg-yellow-500/10",
       iconColor: "text-yellow-500",
