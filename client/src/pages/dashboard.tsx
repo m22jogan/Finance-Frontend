@@ -1,4 +1,4 @@
-import { useState } from "react"; // Added useState for modal management
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import SummaryCards from "@/components/dashboard/summary-cards";
 import SpendingChart from "@/components/dashboard/spending-chart";
@@ -8,11 +8,10 @@ import SavingsGoals from "@/components/dashboard/savings-goals";
 import CsvUpload from "@/components/upload/csv-upload";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SummaryData, Transaction, Budget, SavingsGoal } from "@shared/schema";
-import { Button } from "@/components/ui/button"; // Added Button import
-import { useToast } from "@/hooks/use-toast"; // Added useToast import
-import { apiRequest } from "@/lib/queryClient"; // Added apiRequest import
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
-// Define Category type as it's used for fetching categories
 interface Category {
   id: string;
   name: string;
@@ -22,22 +21,26 @@ interface Category {
 }
 
 export default function Dashboard() {
-  const { toast } = useToast(); // Initialize useToast
-  const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false); // State for modal
+  const { toast } = useToast();
+  const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
 
-  const { data: summary, isLoading: summaryLoading } = useQuery<SummaryData>({
+  const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery<SummaryData>({
     queryKey: ["/api/analytics/summary"],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/analytics/summary');
-      return response.json();
+      const data = await response.json();
+      console.log('Summary data received:', data); // Debug log
+      return data;
     },
   });
 
-  const { data: transactions, isLoading: transactionsLoading } = useQuery<Transaction[]>({
+  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/transactions');
-      return response.json();
+      const data = await response.json();
+      console.log('Transactions data received:', data.length, 'transactions'); // Debug log
+      return data;
     },
   });
 
@@ -53,11 +56,12 @@ export default function Dashboard() {
     queryKey: ["/api/savings-goals"],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/savings-goals');
-      return response.json();
+      const data = await response.json();
+      console.log('Savings goals data received:', data); // Debug log
+      return data;
     },
   });
 
-  // Fetch categories (needed for manual transaction adding dropdowns, etc.)
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
     queryFn: async () => {
@@ -66,8 +70,26 @@ export default function Dashboard() {
     },
   });
 
+  // Error handling
+  if (summaryError || transactionsError) {
+    console.error('Dashboard errors:', { summaryError, transactionsError });
+    return (
+      <div className="p-6 space-y-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <h3 className="font-bold">Error Loading Dashboard</h3>
+          <p>There was an error loading your dashboard data. Please refresh the page.</p>
+          <details className="mt-2">
+            <summary>Error Details</summary>
+            <pre className="mt-2 text-xs">
+              {summaryError && `Summary Error: ${summaryError.message}\n`}
+              {transactionsError && `Transactions Error: ${transactionsError.message}\n`}
+            </pre>
+          </details>
+        </div>
+      </div>
+    );
+  }
 
-  // Function to handle clicking the "Add Transaction" button
   const handleAddTransactionClick = () => {
     toast({
       title: "Add Transaction",
@@ -76,11 +98,9 @@ export default function Dashboard() {
     setIsAddTransactionModalOpen(true);
   };
 
-  // Function to close the add transaction modal/form
   const handleCloseAddTransactionModal = () => {
     setIsAddTransactionModalOpen(false);
   };
-
 
   if (summaryLoading) {
     return (
@@ -94,16 +114,24 @@ export default function Dashboard() {
     );
   }
 
+  // Add safe fallbacks for data
+  const safeSummary = summary || {
+    totalBalance: 0,
+    monthlySpending: 0,
+    savingsProgress: 0,
+    budgetRemaining: 0
+  };
+
   return (
     <div className="p-6 space-y-6" data-testid="dashboard-page">
-      <SummaryCards summary={summary as SummaryData} />
+      <SummaryCards summary={safeSummary as SummaryData} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SpendingChart />
         <RecentTransactions 
           transactions={(transactions as Transaction[])?.slice(0, 5) || []} 
           isLoading={transactionsLoading} 
-          onAddTransactionClick={handleAddTransactionClick} // Prop added here
+          onAddTransactionClick={handleAddTransactionClick}
         />
       </div>
       
@@ -120,15 +148,13 @@ export default function Dashboard() {
       
       <CsvUpload />
 
-      {/* Simple modal for Add New Transaction */}
       {isAddTransactionModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md dark:bg-gray-800">
             <h2 className="text-xl font-bold mb-4">Add New Transaction</h2>
-            <p>Form fields for adding a new transaction would go here. You can use the `categories` data fetched above to populate a dropdown for transaction categories.</p>
+            <p>Form fields for adding a new transaction would go here.</p>
             <div className="flex justify-end mt-6">
               <Button variant="outline" onClick={handleCloseAddTransactionModal}>Cancel</Button>
-              {/* Add a submit button for the form here */}
             </div>
           </div>
         </div>
