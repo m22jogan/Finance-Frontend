@@ -4,9 +4,10 @@ import SummaryCards from "@/components/dashboard/summary-cards";
 import SpendingChart from "@/components/dashboard/spending-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
 import BudgetOverview from "@/components/dashboard/budget-overview";
+import SavingsGoals from "@/components/dashboard/savings-goals";
 import CsvUpload from "@/components/upload/csv-upload";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SummaryData, Transaction, Budget } from "@shared/schema";
+import type { SummaryData, Transaction, Budget, SavingsGoal } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -28,108 +29,105 @@ export default function Dashboard() {
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/analytics/summary');
       const data = await response.json();
-      console.log('Summary data received:', data); // Debug log
+      console.log('Summary data received:', data);
       return data;
     },
   });
 
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/transactions');
-      const data = await response.json();
-      console.log('Transactions data received:', data.length, 'transactions'); // Debug log
-      return data;
-    },
+    queryKey: ["/api/analytics/recent-transactions"],
   });
 
-  const { data: budgets, isLoading: budgetsLoading } = useQuery<Budget[]>({
+  const { data: budgets, isLoading: budgetsLoading, error: budgetsError } = useQuery<Budget[]>({
     queryKey: ["/api/budgets"],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/budgets');
-      return response.json();
-    },
   });
 
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/categories');
-      return response.json();
-    },
+  const { data: savingsGoals, isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
+    queryKey: ['/api/savings-goals'],
   });
 
-  // Error handling
-  if (summaryError || transactionsError) {
-    console.error('Dashboard errors:', { summaryError, transactionsError });
+  // Centralized loading state for the entire dashboard
+  const isLoading = summaryLoading || transactionsLoading || budgetsLoading || goalsLoading;
+
+  // Handle a loading state for the entire page
+  if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          <h3 className="font-bold">Error Loading Dashboard</h3>
-          <p>There was an error loading your dashboard data. Please refresh the page.</p>
-          <details className="mt-2">
-            <summary>Error Details</summary>
-            <pre className="mt-2 text-xs">
-              {summaryError && `Summary Error: ${summaryError.message}\n`}
-              {transactionsError && `Transactions Error: ${transactionsError.message}\n`}
-            </pre>
-          </details>
+      <div className="p-6 space-y-6" data-testid="dashboard-loading">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Skeleton className="h-[150px] w-full" />
+          <Skeleton className="h-[150px] w-full" />
+          <Skeleton className="h-[150px] w-full" />
+          <Skeleton className="h-[150px] w-full" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[350px] w-full" />
+          <Skeleton className="h-[350px] w-full" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[350px] w-full" />
+          <Skeleton className="h-[350px] w-full" />
         </div>
       </div>
     );
   }
 
+  // Handle a "no data" state after loading
+  const hasData = summary && (summary.totalBalance > 0 || summary.monthlySpending > 0 || summary.budgetRemaining > 0);
+
+  if (!hasData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center" data-testid="no-data-message">
+        <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">
+          Welcome to your personal finance dashboard!
+        </p>
+        <p className="mt-2 text-gray-500 dark:text-gray-400">
+          It looks like you don't have any data yet. To get started, please upload a CSV file with your transactions.
+        </p>
+        <CsvUpload />
+      </div>
+    );
+  }
+
+  const safeSummary: SummaryData = {
+    totalBalance: summary?.totalBalance ?? 0,
+    monthlySpending: summary?.monthlySpending ?? 0,
+    savingsProgress: summary?.savingsProgress ?? 0,
+    budgetRemaining: summary?.budgetRemaining ?? 0,
+    savingsGoals: summary?.savingsGoals || [],
+  };
+
   const handleAddTransactionClick = () => {
-    toast({
-      title: "Add Transaction",
-      description: "Opening form to add a new transaction...",
-    });
     setIsAddTransactionModalOpen(true);
   };
 
-  const handleCloseAddTransactionModal = () => {
+  const handleCloseModal = () => {
     setIsAddTransactionModalOpen(false);
-  };
-
-  if (summaryLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Add safe fallbacks for data
-  const safeSummary = summary || {
-    totalBalance: 0,
-    monthlySpending: 0,
-    budgetRemaining: 0
   };
 
   return (
     <div className="p-6 space-y-6" data-testid="dashboard-page">
       <SummaryCards summary={safeSummary as SummaryData} />
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SpendingChart />
-        <RecentTransactions 
-          transactions={(transactions as Transaction[])?.slice(0, 5) || []} 
-          isLoading={transactionsLoading} 
+        <RecentTransactions
+          transactions={(transactions as Transaction[])?.slice(0, 5) || []}
+          isLoading={transactionsLoading}
           onAddTransactionClick={handleAddTransactionClick}
         />
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BudgetOverview 
-          budgets={(budgets as Budget[]) || []} 
-          isLoading={budgetsLoading} 
+        <BudgetOverview
+          budgets={(budgets as Budget[]) || []}
+          isLoading={budgetsLoading}
+        />
+        <SavingsGoals
+          goals={(savingsGoals as SavingsGoal[]) || []}
+          isLoading={goalsLoading}
         />
       </div>
-      
+
       <CsvUpload />
 
       {isAddTransactionModalOpen && (
@@ -138,7 +136,8 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold mb-4">Add New Transaction</h2>
             <p>Form fields for adding a new transaction would go here.</p>
             <div className="flex justify-end mt-6">
-              <Button variant="outline" onClick={handleCloseAddTransactionModal}>Cancel</Button>
+              <Button onClick={handleCloseModal} variant="outline" className="mr-2">Cancel</Button>
+              <Button onClick={handleCloseModal}>Save</Button>
             </div>
           </div>
         </div>
