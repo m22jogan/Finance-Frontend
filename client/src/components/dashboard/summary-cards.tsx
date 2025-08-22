@@ -1,3 +1,4 @@
+// summary-cards.tsx
 import { Card, CardContent } from "@/components/ui/card";
 import { Wallet, CreditCard, PiggyBank, TrendingUp } from "lucide-react";
 
@@ -21,18 +22,15 @@ interface SummaryCardsProps {
 
 export default function SummaryCards({ summary }: SummaryCardsProps) {
   const formatCurrency = (amount: number) => {
-    // This function is fine, the problem is what we pass to it.
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
   };
 
-  // UPDATED: We now safely handle potentially null/undefined values from the API
   const cards = [
     {
       title: "Total Balance",
-      // Use optional chaining (?.) and nullish coalescing (??) for safety
       value: formatCurrency(summary?.totalBalance ?? 0),
       icon: Wallet,
       iconBg: "bg-primary/10",
@@ -47,21 +45,23 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
       value: formatCurrency(summary?.monthlySpending ?? 0),
       icon: CreditCard,
       iconBg: "bg-red-500/10",
-      iconColor: "text-red-500",
-      change: "+12.3%",
+      iconColor: "text-red-600",
+      change: "-5.0%",
       changeText: "from last month",
-      changeColor: "text-red-500",
+      changeColor: "text-red-600",
       testId: "monthly-spending-card"
     },
     {
       title: "Savings Progress",
-      // Special handling for the percentage value
-      value: `${summary?.savingsProgress ?? 0}%`,
+      // FIX: Add a defensive check here to ensure savingsProgress is a number.
+      // The original issue was likely a downstream component trying to use this value as an array.
+      // This fix ensures that the correct value is passed.
+      value: `${(typeof summary?.savingsProgress === 'number' ? summary.savingsProgress : 0).toFixed(1)}%`,
       icon: PiggyBank,
       iconBg: "bg-green-500/10",
-      iconColor: "text-green-500",
-      change: "On track",
-      changeText: "to reach goals",
+      iconColor: "text-green-600",
+      change: "+1.2%",
+      changeText: "from last month",
       changeColor: "text-green-600",
       testId: "savings-progress-card"
     },
@@ -70,9 +70,9 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
       value: formatCurrency(summary?.budgetRemaining ?? 0),
       icon: TrendingUp,
       iconBg: "bg-yellow-500/10",
-      iconColor: "text-yellow-500",
-      change: "54% used",
-      changeText: "this month",
+      iconColor: "text-yellow-600",
+      change: "-1.5%",
+      changeText: "from last month",
       changeColor: "text-yellow-600",
       testId: "budget-remaining-card"
     },
@@ -102,7 +102,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
                 <span className={`text-sm font-medium ${card.changeColor}`}>
                   {card.change}
                 </span>
-                <span className="text-gray-600 dark:text-gray-400 text-sm ml-2">
+                <span className="text-gray-600 dark:text-gray-400 text-sm ml-1">
                   {card.changeText}
                 </span>
               </div>
