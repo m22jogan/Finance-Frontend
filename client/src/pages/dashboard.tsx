@@ -4,10 +4,9 @@ import SummaryCards from "@/components/dashboard/summary-cards";
 import SpendingChart from "@/components/dashboard/spending-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
 import BudgetOverview from "@/components/dashboard/budget-overview";
-import SavingsGoals from "@/components/dashboard/savings-goals";
 import CsvUpload from "@/components/upload/csv-upload";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SummaryData, Transaction, Budget, SavingsGoal } from "@shared/schema";
+import type { SummaryData, Transaction, Budget } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -49,16 +48,6 @@ export default function Dashboard() {
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/budgets');
       return response.json();
-    },
-  });
-
-  const { data: savingsGoals, isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
-    queryKey: ["/api/savings-goals"],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/savings-goals');
-      const data = await response.json();
-      console.log('Savings goals data received:', data); // Debug log
-      return data;
     },
   });
 
@@ -118,7 +107,6 @@ export default function Dashboard() {
   const safeSummary = summary || {
     totalBalance: 0,
     monthlySpending: 0,
-    savingsProgress: 0,
     budgetRemaining: 0
   };
 
@@ -139,10 +127,6 @@ export default function Dashboard() {
         <BudgetOverview 
           budgets={(budgets as Budget[]) || []} 
           isLoading={budgetsLoading} 
-        />
-        <SavingsGoals 
-          goals={(savingsGoals as SavingsGoal[]) || []} 
-          isLoading={goalsLoading} 
         />
       </div>
       
