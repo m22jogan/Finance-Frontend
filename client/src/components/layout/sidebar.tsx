@@ -8,6 +8,7 @@ import {
   Wallet,
   BarChart,
   User,
+  Tags, // ✅ New icon
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -18,14 +19,14 @@ const navigation = [
   { name: "Savings Goals", href: "/savings", icon: PiggyBank },
   { name: "Upload CSV", href: "/upload", icon: Upload },
   { name: "Reports", href: "/reports", icon: BarChart },
+  { name: "Categories", href: "/categories", icon: Tags }, // ✅ New nav item
 ];
 
 export default function Sidebar() {
   const [location] = useLocation();
   const { user, loading } = useAuth();
-  const { email } = user || {}; // Use destructuring with a fallback for safety
+  const { email } = user || {};
 
-  // Determine a simple "name" from the email for display
   const userName = email?.split("@")[0] || "User";
 
   return (
