@@ -78,8 +78,8 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
         name: data.name,
         targetAmount: parseFloat(data.targetAmount).toString(),
         currentAmount: data.currentAmount
-          ? parseFloat(data.currentAmount).toString()
-          : "0",
+          ? parseFloat(data.currentAmount)//.toString()
+          : "0", //
         targetDate: data.targetDate?.toISOString() || null,
       };
 
