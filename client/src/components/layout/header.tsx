@@ -37,7 +37,7 @@ export default function Header() {
   const pageName = pageNames[location] || "Dashboard";
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 h-20 flex items-center justify-between">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 h-20">
       <div className="flex items-center justify-between">
         {/* Left side: menu + page title */}
         <div className="flex items-center">
