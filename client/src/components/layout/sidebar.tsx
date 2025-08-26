@@ -26,7 +26,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex md:flex-col md:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-center h-20 px-6 border-b border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-primary">Plex</h1>
+        <h1 className="text-4xl font-bold text-primary">Plex</h1>
       </div>
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navigation.map((item) => {
