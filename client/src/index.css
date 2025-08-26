@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -58,135 +60,128 @@
   * {
     @apply border-border;
   }
-
+  
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-feature-settings: 'tnum' 1, 'lnum' 1; /* Tabular and lining numbers for better data display */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-
+  
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
-
+  
+  /* Specialized typography for finance data */
+  .finance-numbers {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-
   ::-webkit-scrollbar-track {
     @apply bg-gray-100 dark:bg-gray-800;
   }
-
   ::-webkit-scrollbar-thumb {
     @apply bg-gray-300 dark:bg-gray-600 rounded-full;
   }
-
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-400 dark:bg-gray-500;
   }
-
+  
   /* Finance specific styles */
   .finance-card {
     @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm;
   }
-
   .finance-amount-positive {
     @apply text-green-600 dark:text-green-400;
   }
-
   .finance-amount-negative {
     @apply text-red-600 dark:text-red-400;
   }
-
   .finance-amount-neutral {
     @apply text-gray-600 dark:text-gray-400;
   }
-
+  
   /* Progress bar animations */
   .progress-bar {
     transition: width 0.3s ease-in-out;
   }
-
+  
   /* Chart container styles */
   .chart-container {
     @apply w-full h-full;
   }
-
+  
   /* Upload zone styles */
   .upload-zone {
     @apply border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center transition-colors cursor-pointer;
   }
-
   .upload-zone:hover {
     @apply border-primary bg-primary/5;
   }
-
   .upload-zone.dragging {
     @apply border-primary bg-primary/10;
   }
-
+  
   /* Custom button variants for finance theme */
   .btn-success {
     @apply bg-green-600 hover:bg-green-700 text-white;
   }
-
   .btn-warning {
     @apply bg-yellow-500 hover:bg-yellow-600 text-white;
   }
-
   .btn-error {
     @apply bg-red-600 hover:bg-red-700 text-white;
   }
-
+  
   /* Transaction list styles */
   .transaction-item {
     @apply flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors group border border-gray-200 dark:border-gray-600;
   }
-
   .transaction-actions {
     @apply opacity-0 group-hover:opacity-100 transition-opacity flex gap-1;
   }
-
+  
   /* Budget progress indicators */
   .budget-progress-safe {
     @apply bg-blue-500;
   }
-
   .budget-progress-warning {
     @apply bg-yellow-500;
   }
-
   .budget-progress-danger {
     @apply bg-red-500;
   }
-
+  
   /* Savings goal progress */
   .savings-progress-low {
     @apply bg-gray-400;
   }
-
   .savings-progress-medium {
     @apply bg-yellow-500;
   }
-
   .savings-progress-high {
     @apply bg-blue-500;
   }
-
   .savings-progress-complete {
     @apply bg-green-600;
   }
-
+  
   /* Animation classes */
   .fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
-
   .slide-up {
     animation: slideUp 0.3s ease-out;
   }
-
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -195,7 +190,6 @@
       opacity: 1;
     }
   }
-
   @keyframes slideUp {
     from {
       transform: translateY(10px);
@@ -206,7 +200,7 @@
       opacity: 1;
     }
   }
-
+  
   /* Loading states */
   .loading-shimmer {
     background: linear-gradient(90deg, 
@@ -217,7 +211,6 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
-
   @keyframes shimmer {
     0% {
       background-position: -200% 0;
@@ -226,30 +219,28 @@
       background-position: 200% 0;
     }
   }
-
+  
   /* Responsive design helpers */
   .mobile-padding {
     @apply px-4 sm:px-6;
   }
-
   .container-responsive {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-
+  
   /* Focus states for accessibility */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800;
   }
-
+  
   /* Custom utility classes */
   .text-balance {
     text-wrap: balance;
   }
-
   .text-pretty {
     text-wrap: pretty;
   }
-
+  
   /* Print styles */
   @media print {
     .no-print {
@@ -271,19 +262,15 @@
   .sidebar-nav-item {
     @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors;
   }
-
   .sidebar-nav-item-active {
     @apply text-white bg-primary;
   }
-
   .sidebar-nav-item-inactive {
     @apply text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700;
   }
-
   .summary-card {
     @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6;
   }
-
   .chart-card {
     @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700;
   }
@@ -294,23 +281,18 @@
   .text-finance-positive {
     @apply text-green-600 dark:text-green-400;
   }
-
   .text-finance-negative {
     @apply text-red-600 dark:text-red-400;
   }
-
   .bg-finance-positive {
     @apply bg-green-100 dark:bg-green-900/20;
   }
-
   .bg-finance-negative {
     @apply bg-red-100 dark:bg-red-900/20;
   }
-
   .border-finance-positive {
     @apply border-green-200 dark:border-green-800;
   }
-
   .border-finance-negative {
     @apply border-red-200 dark:border-red-800;
   }
