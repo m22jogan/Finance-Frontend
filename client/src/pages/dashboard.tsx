@@ -20,6 +20,12 @@ interface Category {
   color?: string;
 }
 
+interface CategorySpending {
+  category: string;
+  amount: number;
+  percentage: number;
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -46,8 +52,19 @@ export default function Dashboard() {
     queryKey: ['/api/savings-goals'],
   });
 
+  // Add a separate query for category spending data
+  const { data: categorySpending, isLoading: categorySpendingLoading } = useQuery<CategorySpending[]>({
+    queryKey: ["/api/analytics/spending-by-category"],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/analytics/spending-by-category');
+      const data = await response.json();
+      console.log('Category spending data received:', data);
+      return data;
+    },
+  });
+
   // Centralized loading state for the entire dashboard
-  const isLoading = summaryLoading || transactionsLoading || budgetsLoading || goalsLoading;
+  const isLoading = summaryLoading || transactionsLoading || budgetsLoading || goalsLoading || categorySpendingLoading;
 
   // Handle a loading state for the entire page
   if (isLoading) {
@@ -88,12 +105,13 @@ export default function Dashboard() {
     );
   }
 
-  const safeSummary: SummaryData = {
+  const safeSummary: SummaryData & { categorySpending?: CategorySpending[] } = {
     totalBalance: summary?.totalBalance ?? 0,
     monthlySpending: summary?.monthlySpending ?? 0,
     savingsProgress: summary?.savingsProgress ?? 0,
     budgetRemaining: summary?.budgetRemaining ?? 0,
     savingsGoals: summary?.savingsGoals || [],
+    categorySpending: categorySpending || [],
   };
 
   const handleAddTransactionClick = () => {
@@ -106,7 +124,10 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6" data-testid="dashboard-page">
-      <SummaryCards summary={safeSummary as SummaryData} />
+      <SummaryCards 
+        summary={safeSummary as SummaryData} 
+        categorySpending={categorySpending || []}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SpendingChart />
