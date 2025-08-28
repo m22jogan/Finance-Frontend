@@ -32,6 +32,15 @@ interface SpendingChartData {
   color: string;
 }
 
+// Updated SavingsGoal interface to match the backend API
+interface SavingsGoal {
+  id: string;
+  name: string;
+  target_amount: string;
+  current_amount: string;
+  target_date?: string | null;
+}
+
 // Helper function to convert category spending to chart format
 function convertToChartData(categorySpending: CategorySpending[]): SpendingChartData[] {
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658"];
@@ -66,6 +75,7 @@ export default function Dashboard() {
     queryKey: ["/api/budgets"],
   });
 
+  // Fetch savings goals using the updated interface
   const { data: savingsGoals, isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
     queryKey: ['/api/savings-goals'],
   });
