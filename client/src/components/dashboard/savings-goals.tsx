@@ -11,12 +11,13 @@ import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Updated SavingsGoal interface to match the backend API
 interface SavingsGoal {
   id: string;
   name: string;
-  targetAmount: string;
-  currentAmount: string;
-  targetDate?: string;
+  target_amount: string;
+  current_amount: string;
+  target_date?: string | null;
 }
 
 interface SavingsGoalsProps {
@@ -41,7 +42,7 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
     }).format(num);
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return null;
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -123,8 +124,9 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
           {goals.length > 0 ? (
             <div className="space-y-4">
               {goals.map((goal) => {
-                const current = parseFloat(goal.currentAmount);
-                const target = parseFloat(goal.targetAmount);
+                // Correctly use snake_case keys for parsing
+                const current = parseFloat(goal.current_amount || "0");
+                const target = parseFloat(goal.target_amount || "0");
                 const percentage = target > 0 ? (current / target) * 100 : 0;
 
                 return (
@@ -132,7 +134,7 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <span className="font-medium" data-testid={`goal-name-${goal.id}`}>{goal.name}</span>
-                        {goal.targetDate && (<span className="block text-xs text-gray-500 dark:text-gray-400" data-testid={`goal-date-${goal.id}`}>{formatDate(goal.targetDate)}</span>)}
+                        {goal.target_date && (<span className="block text-xs text-gray-500 dark:text-gray-400" data-testid={`goal-date-${goal.id}`}>{formatDate(goal.target_date)}</span>)}
                       </div>
                       {/* NEW: "Add Funds" button for each goal */}
                       <Button variant="outline" size="sm" onClick={() => handleAddFundsClick(goal)}>
@@ -140,8 +142,8 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
                       </Button>
                     </div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl font-bold" data-testid={`goal-current-${goal.id}`}>{formatCurrency(goal.currentAmount)}</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400" data-testid={`goal-target-${goal.id}`}>of {formatCurrency(goal.targetAmount)}</span>
+                      <span className="text-2xl font-bold" data-testid={`goal-current-${goal.id}`}>{formatCurrency(goal.current_amount)}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400" data-testid={`goal-target-${goal.id}`}>of {formatCurrency(goal.target_amount)}</span>
                     </div>
                     <Progress value={percentage} className="h-2 mb-2" />
                     <p className="text-xs text-gray-600 dark:text-gray-400">
