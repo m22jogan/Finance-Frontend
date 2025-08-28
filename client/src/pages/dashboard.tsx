@@ -32,64 +32,6 @@ interface SpendingChartData {
   color: string;
 }
 
-// Helper function to categorize transactions
-function calculateCategorySpendingFromTransactions(transactions: Transaction[]): CategorySpending[] {
-  const categoryMap = new Map<string, number>();
-  let totalSpending = 0;
-
-  transactions.forEach(transaction => {
-    // Only count expenses (negative amounts or positive amounts for expenses)
-    const amount = Math.abs(parseFloat(transaction.amount));
-    if (amount > 0 && transaction.type === 'expense') {
-      const category = categorizeTransaction(transaction.description || 'Other');
-      categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
-      totalSpending += amount;
-    }
-  });
-
-  const categorySpending: CategorySpending[] = [];
-  categoryMap.forEach((amount, category) => {
-    categorySpending.push({
-      category,
-      amount,
-      percentage: totalSpending > 0 ? (amount / totalSpending) * 100 : 0
-    });
-  });
-
-  return categorySpending.sort((a, b) => b.amount - a.amount);
-}
-
-// Simple categorization logic based on merchant/description
-function categorizeTransaction(description: string): string {
-  const desc = description.toLowerCase();
-  
-  if (desc.includes('starbucks') || desc.includes('coffee') || desc.includes('restaurant') || 
-      desc.includes('chick-fil-a') || desc.includes('mcdonald') || desc.includes('food')) {
-    return 'Food & Dining';
-  }
-  
-  if (desc.includes('hobby-lobby') || desc.includes('target') || desc.includes('walmart') || 
-      desc.includes('amazon') || desc.includes('shop')) {
-    return 'Shopping';
-  }
-  
-  if (desc.includes('apple.com') || desc.includes('netflix') || desc.includes('spotify') || 
-      desc.includes('subscription') || desc.includes('bill')) {
-    return 'Subscriptions & Bills';
-  }
-  
-  if (desc.includes('gas') || desc.includes('shell') || desc.includes('exxon') || 
-      desc.includes('transport') || desc.includes('uber') || desc.includes('lyft')) {
-    return 'Transportation';
-  }
-  
-  if (desc.includes('bank') || desc.includes('atm') || desc.includes('fee')) {
-    return 'Fees & Charges';
-  }
-  
-  return 'Other';
-}
-
 // Helper function to convert category spending to chart format
 function convertToChartData(categorySpending: CategorySpending[]): SpendingChartData[] {
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658"];
@@ -127,34 +69,25 @@ export default function Dashboard() {
     queryKey: ['/api/savings-goals'],
   });
 
-  // Add a separate query for category spending data
+  // Fetch category spending data from your backend
   const { data: categorySpending, isLoading: categorySpendingLoading } = useQuery<CategorySpending[]>({
     queryKey: ["/api/analytics/spending-by-category"],
     queryFn: async () => {
-      try {
-        const response = await apiRequest('GET', '/api/analytics/spending-by-category');
-        const data = await response.json();
-        console.log('Category spending data received:', data);
-        
-        // Calculate percentages from backend data
-        const totalAmount = data.reduce((sum: number, item: any) => sum + item.amount, 0);
-        const categorySpendingWithPercentages = data.map((item: any) => ({
-          category: item.category,
-          amount: item.amount,
-          percentage: totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0
-        }));
-        
-        return categorySpendingWithPercentages;
-      } catch (error) {
-        console.warn('Category spending endpoint not available, calculating from transactions');
-        // Fallback: calculate categories from transactions if API endpoint doesn't exist
-        if (transactions && transactions.length > 0) {
-          return calculateCategorySpendingFromTransactions(transactions);
-        }
-        return [];
-      }
+      const response = await apiRequest('GET', '/api/analytics/spending-by-category');
+      const data = await response.json();
+      console.log('Category spending data received:', data);
+      
+      // Your backend returns [{category: "Food & Dining", amount: 450.20}, ...]
+      // Calculate percentages from the amounts
+      const totalAmount = data.reduce((sum: number, item: any) => sum + item.amount, 0);
+      const categorySpendingWithPercentages = data.map((item: any) => ({
+        category: item.category,
+        amount: item.amount,
+        percentage: totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0
+      }));
+      
+      return categorySpendingWithPercentages;
     },
-    enabled: !summaryLoading && !transactionsLoading, // Only run after other data is loaded
   });
 
   // Convert category spending to chart format for SpendingChart component
