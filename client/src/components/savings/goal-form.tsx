@@ -1,45 +1,18 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, X, Target } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { CalendarIcon, Target } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import React from "react";
 
-// -------------------- Schema --------------------
-const goalFormSchema = z.object({
-  name: z.string().min(1, "Goal name is required"),
-  targetAmount: z
-    .string()
-    .min(1, "Target amount is required")
-    .refine(
-      (val: string) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
-      "Target amount must be a positive number"
-    ),
-  currentAmount: z
-    .string()
-    .refine(
-      (val: string) =>
-        val === "" || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0),
-      "Current amount must be a positive number or empty"
-    ),
-  targetDate: z.date().optional(),
-});
-
-type GoalFormData = z.infer<typeof goalFormSchema>;
-
-// -------------------- Types --------------------
-interface Goal {
+interface SavingsGoal {
   id: string;
   name: string;
   targetAmount: string;
@@ -48,215 +21,198 @@ interface Goal {
 }
 
 interface GoalFormProps {
-  onClose?: () => void;
-  goalId?: string;
+  onSave: () => void;
+  onCancel: () => void;
+  initialData?: SavingsGoal | null;
 }
 
-// -------------------- Component --------------------
-export default function GoalForm({ onClose, goalId }: GoalFormProps) {
-  const queryClient = useQueryClient();
+const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) => {
+  const [name, setName] = useState(initialData?.name || '');
+  const [targetAmount, setTargetAmount] = useState(initialData?.targetAmount || '');
+  const [currentAmount, setCurrentAmount] = useState(initialData?.currentAmount || '0');
+  const [targetDate, setTargetDate] = useState<Date | undefined>(
+    initialData?.targetDate ? new Date(initialData.targetDate) : undefined
+  );
+
   const { toast } = useToast();
 
-  const { data: goal } = useQuery<Goal>({
-    queryKey: ["/api/savings-goals", goalId],
-    enabled: !!goalId,
-  });
-
-  const form = useForm<GoalFormData>({
-    resolver: zodResolver(goalFormSchema),
-    defaultValues: {
-      name: "",
-      targetAmount: "",
-      currentAmount: "0",
-      targetDate: undefined,
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: GoalFormData) => {
-      const goalData = {
-        name: data.name,
-        targetAmount: parseFloat(data.targetAmount).toString(),
-        currentAmount: data.currentAmount
-          ? parseFloat(data.currentAmount)//.toString()
-          : "0", //
-        targetDate: data.targetDate?.toISOString() || null,
-      };
-
-      if (goalId) {
-        return apiRequest("PUT", `/api/savings-goals/${goalId}`, goalData);
-      } else {
-        return apiRequest("POST", "/api/savings-goals", goalData);
-      }
+  const addGoalMutation = useMutation({
+    mutationFn: async (newGoal: Omit<SavingsGoal, 'id'>) => {
+      return apiRequest('POST', '/api/savings-goals', newGoal);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
       toast({
-        title: goalId ? "Goal updated" : "Goal created",
-        description: `Savings goal has been successfully ${
-          goalId ? "updated" : "created"
-        }`,
+        title: "Goal created",
+        description: "New savings goal has been successfully created.",
       });
-      onClose?.();
+      onSave();
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description:
-          error.message ||
-          `Failed to ${goalId ? "update" : "create"} savings goal`,
+        description: error.message || "Failed to create goal.",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: GoalFormData) => {
-    createMutation.mutate(data);
+  const updateGoalMutation = useMutation({
+    mutationFn: async (updatedGoal: SavingsGoal) => {
+      return apiRequest('PUT', `/api/savings-goals/${updatedGoal.id}`, updatedGoal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
+      toast({
+        title: "Goal updated",
+        description: "Savings goal has been successfully updated.",
+      });
+      onSave();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update goal.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Goal name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const targetAmountNum = parseFloat(targetAmount);
+    if (isNaN(targetAmountNum) || targetAmountNum <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Target amount must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentAmountNum = parseFloat(currentAmount);
+    if (isNaN(currentAmountNum) || currentAmountNum < 0) {
+      toast({
+        title: "Validation Error",
+        description: "Current amount must be a positive number or zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const goalData = {
+      name: name.trim(),
+      targetAmount: targetAmountNum.toString(),
+      currentAmount: currentAmountNum.toString(),
+      targetDate: targetDate ? targetDate.toISOString() : null,
+    };
+
+    if (initialData?.id) {
+      updateGoalMutation.mutate({ ...goalData, id: initialData.id });
+    } else {
+      addGoalMutation.mutate(goalData);
+    }
   };
 
-  // Set form values when editing
-  React.useEffect(() => {
-    if (goal && goalId) {
-      form.reset({
-        name: goal.name,
-        targetAmount: goal.targetAmount,
-        currentAmount: goal.currentAmount,
-        targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
-      });
-    }
-  }, [goal, goalId, form]);
-
-  const currentAmount = parseFloat(form.watch("currentAmount") || "0");
-  const targetAmount = parseFloat(form.watch("targetAmount") || "0");
-  const progress = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+  // Calculate progress for preview
+  const current = parseFloat(currentAmount || '0');
+  const target = parseFloat(targetAmount || '0');
+  const progress = target > 0 ? (current / target) * 100 : 0;
 
   return (
-    <Card className="w-full max-w-md mx-auto" data-testid="goal-form">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          {goalId ? "Edit Savings Goal" : "Create Savings Goal"}
-        </CardTitle>
-        {onClose && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            data-testid="close-goal-form"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Goal Name */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Goal Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Emergency Fund, Vacation, New Car"
-                      {...field}
-                      data-testid="goal-name-input"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-md mx-auto animate-in fade-in-0 zoom-in-95">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            {initialData ? "Edit Savings Goal" : "Add New Savings Goal"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Goal Name</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Emergency Fund, Vacation, New Car"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                data-testid="goal-name-input"
+              />
+            </div>
 
-            {/* Target Amount */}
-            <FormField
-              control={form.control}
-              name="targetAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Amount</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      step="0.01"
-                      {...field}
-                      data-testid="goal-target-amount-input"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="targetAmount">Target Amount</Label>
+                <Input
+                  id="targetAmount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={targetAmount}
+                  onChange={(e) => setTargetAmount(e.target.value)}
+                  required
+                  data-testid="goal-target-amount-input"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="currentAmount">Current Amount</Label>
+                <Input
+                  id="currentAmount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={currentAmount}
+                  onChange={(e) => setCurrentAmount(e.target.value)}
+                  required
+                  data-testid="goal-current-amount-input"
+                />
+              </div>
+            </div>
 
-            {/* Current Amount */}
-            <FormField
-              control={form.control}
-              name="currentAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current Amount</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      step="0.01"
-                      {...field}
-                      data-testid="goal-current-amount-input"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Target Date */}
-            <FormField
-              control={form.control}
-              name="targetDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Target Date (Optional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                          data-testid="goal-target-date-input"
-                        >
-                          {field.value ? (
-                            format(field.value, "MMM dd, yyyy")
-                          ) : (
-                            <span>Pick a target date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid gap-2">
+              <Label>Target Date (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !targetDate && "text-muted-foreground"
+                    )}
+                    data-testid="goal-target-date-input"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {targetDate ? format(targetDate, "MMM dd, yyyy") : "Pick a target date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={targetDate}
+                    onSelect={setTargetDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
             {/* Progress Preview */}
-            {targetAmount > 0 && (
-              <div
+            {target > 0 && (
+              <div 
                 className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
                 data-testid="goal-progress-preview"
               >
@@ -273,47 +229,75 @@ export default function GoalForm({ onClose, goalId }: GoalFormProps) {
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                  <span>${currentAmount.toFixed(2)}</span>
-                  <span>${targetAmount.toFixed(2)}</span>
+                  <span>${current.toFixed(2)}</span>
+                  <span>${target.toFixed(2)}</span>
                 </div>
                 {progress >= 100 && (
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                    🎉 Goal achieved!
+                    Goal achieved!
                   </p>
                 )}
               </div>
             )}
 
-            {/* Buttons */}
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="submit"
-                className="flex-1"
-                disabled={createMutation.isPending}
-                data-testid="submit-goal-form"
-              >
-                {createMutation.isPending
-                  ? goalId
-                    ? "Updating..."
-                    : "Creating..."
-                  : goalId
-                  ? "Update Goal"
-                  : "Create Goal"}
-              </Button>
-              {onClose && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  data-testid="cancel-goal-form"
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
+            {/* Days calculation */}
+            {targetDate && target > 0 && current < target && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg text-sm">
+                {(() => {
+                  const today = new Date();
+                  const daysLeft = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  if (daysLeft > 0) {
+                    const remaining = target - current;
+                    const dailyRequired = remaining / daysLeft;
+                    return (
+                      <p className="text-blue-700 dark:text-blue-300">
+                        <strong>{daysLeft}</strong> days to reach your goal.
+                        <br />
+                        Save <strong>${dailyRequired.toFixed(2)}</strong> per day to stay on track.
+                      </p>
+                    );
+                  } else if (daysLeft === 0) {
+                    return (
+                      <p className="text-orange-700 dark:text-orange-300">
+                        Target date is today!
+                      </p>
+                    );
+                  } else {
+                    return (
+                      <p className="text-red-700 dark:text-red-300">
+                        Target date has passed.
+                      </p>
+                    );
+                  }
+                })()}
+              </div>
+            )}
           </form>
-        </Form>
-      </CardContent>
-    </Card>
+        </CardContent>
+        <CardFooter className="flex justify-end gap-2">
+          <Button 
+            variant="outline" 
+            onClick={onCancel} 
+            disabled={addGoalMutation.isPending || updateGoalMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            onClick={handleSubmit} 
+            disabled={addGoalMutation.isPending || updateGoalMutation.isPending}
+            data-testid="submit-goal-form"
+          >
+            {addGoalMutation.isPending || updateGoalMutation.isPending
+              ? (initialData ? "Updating..." : "Creating...")
+              : (initialData ? "Save Changes" : "Create Goal")
+            }
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
-}
+};
+
+export default GoalForm;
