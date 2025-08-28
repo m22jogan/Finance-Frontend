@@ -78,6 +78,23 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
     },
   });
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Adjust for timezone offset to prevent date from being off by one day
+    const dateValue = e.target.value;
+    // An empty string in the input should clear the date
+    if (!dateValue) {
+      setTargetDate(undefined);
+      return;
+    }
+    const date = new Date(`${dateValue}T00:00:00`);
+
+    if (!isNaN(date.getTime())) {
+      setTargetDate(date);
+    } else {
+      setTargetDate(undefined);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -185,19 +202,21 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
             <div className="grid gap-2">
               <Label>Target Date (Optional)</Label>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !targetDate && "text-muted-foreground"
-                    )}
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="YYYY-MM-DD"
+                    value={targetDate ? format(targetDate, "yyyy-MM-dd") : ""}
+                    onChange={handleDateChange}
                     data-testid="goal-target-date-input"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {targetDate ? format(targetDate, "MMM dd, yyyy") : "Pick a target date"}
-                  </Button>
-                </PopoverTrigger>
+                    className="pr-10"
+                  />
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                </div>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
