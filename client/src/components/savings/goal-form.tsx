@@ -15,9 +15,9 @@ import { cn } from "@/lib/utils";
 interface SavingsGoal {
   id: string;
   name: string;
-  targetAmount: string;
-  currentAmount: string;
-  targetDate?: string | null;
+  target_amount: string;
+  current_amount: string;
+  target_date?: string | null;
 }
 
 interface GoalFormProps {
@@ -28,10 +28,10 @@ interface GoalFormProps {
 
 const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) => {
   const [name, setName] = useState(initialData?.name || '');
-  const [targetAmount, setTargetAmount] = useState(initialData?.targetAmount || '');
-  const [currentAmount, setCurrentAmount] = useState(initialData?.currentAmount || '0');
+  const [targetAmount, setTargetAmount] = useState(initialData?.target_amount || '');
+  const [currentAmount, setCurrentAmount] = useState(initialData?.current_amount || '0');
   const [targetDate, setTargetDate] = useState<Date | undefined>(
-    initialData?.targetDate ? new Date(initialData.targetDate) : undefined
+    initialData?.target_date ? new Date(initialData.target_date) : undefined
   );
 
   const { toast } = useToast();
@@ -113,9 +113,9 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
 
     const goalData = {
       name: name.trim(),
-      targetAmount: targetAmountNum.toString(),
-      currentAmount: currentAmountNum.toString(),
-      targetDate: targetDate ? targetDate.toISOString() : null,
+      target_amount: targetAmountNum.toString(),
+      current_amount: currentAmountNum.toString(),
+      target_date: targetDate ? targetDate.toISOString() : null,
     };
 
     if (initialData?.id) {
