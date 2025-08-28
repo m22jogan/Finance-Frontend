@@ -5,34 +5,73 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Transaction, Category } from "@shared/schema";
 import TransactionForm from "@/components/transactions/transaction-form";
-import TransactionList from "@/components/transactions/transaction-list"; // Import the updated TransactionList component
+import TransactionList from "@/components/transactions/transaction-list";
 
 export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null); // State for editing
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { toast } = useToast();
 
   // Fetch all transactions
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    select: (data) => {
+      // Transform the data to handle potential field name variations from backend
+      return data.map(transaction => ({
+        ...transaction,
+        // Ensure we have categoryId field (handle category_id from backend)
+        categoryId: transaction.categoryId || (transaction as any).category_id,
+        // Ensure we have proper type conversion if needed
+        amount: typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount,
+      }));
+    }
   });
 
   // Fetch categories
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
 
+  // Debug logging to understand data structure
+  useEffect(() => {
+    if (transactions.length > 0 && categories.length > 0) {
+      console.log('=== DEBUGGING TRANSACTION CATEGORIES ===');
+      console.log('Sample raw transaction from API:', transactions[0]);
+      console.log('Available categories:', categories.map(cat => ({ id: cat.id, name: cat.name })));
+      
+      // Check for transactions with categories
+      const transactionsWithCategories = transactions.filter(t => t.categoryId || (t as any).category_id);
+      console.log('Transactions with categories:', transactionsWithCategories.length);
+      
+      if (transactionsWithCategories.length > 0) {
+        const sampleWithCategory = transactionsWithCategories[0];
+        console.log('Sample transaction with category:', {
+          id: sampleWithCategory.id,
+          description: sampleWithCategory.description,
+          categoryId: sampleWithCategory.categoryId,
+          category_id: (sampleWithCategory as any).category_id
+        });
+        
+        // Try to find the category for this transaction
+        const categoryId = sampleWithCategory.categoryId || (sampleWithCategory as any).category_id;
+        const foundCategory = categories.find(cat => cat.id === categoryId);
+        console.log('Found category for sample transaction:', foundCategory);
+      }
+      
+      console.log('=== END DEBUG INFO ===');
+    }
+  }, [transactions, categories]);
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Use the apiRequest for deletion as well, consistent with transactions page
       return apiRequest('DELETE', `/api/transactions/${id}`);
     },
     onSuccess: () => {
@@ -56,23 +95,31 @@ export default function Transactions() {
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || transaction.type === typeFilter;
-    const matchesCategory = categoryFilter === "all" || transaction.categoryId === categoryFilter;
+    
+    // Handle category filtering with both possible field names
+    const transactionCategoryId = transaction.categoryId || (transaction as any).category_id;
+    const matchesCategory = categoryFilter === "all" || transactionCategoryId === categoryFilter;
     
     return matchesSearch && matchesType && matchesCategory;
   });
 
   const handleEditTransaction = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
+    // Ensure the transaction has the correct categoryId field for editing
+    const normalizedTransaction = {
+      ...transaction,
+      categoryId: transaction.categoryId || (transaction as any).category_id,
+    };
+    setEditingTransaction(normalizedTransaction);
     setIsFormOpen(true);
   };
 
   const handleFormClose = () => {
     setIsFormOpen(false);
-    setEditingTransaction(null); // Clear editing state
+    setEditingTransaction(null);
   };
 
-  // Loading state for the entire page
-  if (transactionsLoading) {
+  // Show loading state while either transactions or categories are loading
+  if (transactionsLoading || categoriesLoading) {
     return (
       <div className="p-6" data-testid="transactions-loading-page">
         <div className="space-y-6">
@@ -107,7 +154,7 @@ export default function Transactions() {
         <Button 
           data-testid="add-transaction-button"
           onClick={() => {
-            setEditingTransaction(null); // Ensure no old data is passed if adding new
+            setEditingTransaction(null);
             setIsFormOpen(true);
           }} 
         >
@@ -154,21 +201,35 @@ export default function Transactions() {
         </Select>
       </div>
 
-      {/* Render the TransactionList component, passing filtered data and handlers */}
+      {/* Debug info - remove this section once the issue is resolved */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-2">Debug Info (Development Only):</h3>
+            <div className="text-sm space-y-1">
+              <p>Total Transactions: {transactions.length}</p>
+              <p>Total Categories: {categories.length}</p>
+              <p>Filtered Transactions: {filteredTransactions.length}</p>
+              <p>Transactions with Categories: {transactions.filter(t => t.categoryId || (t as any).category_id).length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <TransactionList
         transactions={filteredTransactions}
-        isLoading={transactionsLoading} // Pass loading state
-        categories={categories} // Pass categories
-        onDelete={deleteMutation.mutate} // Pass the delete mutate function
-        onEdit={handleEditTransaction} // Pass the edit handler
-        isDeleting={deleteMutation.isPending} // Pass deletion loading state
+        isLoading={transactionsLoading}
+        categories={categories}
+        onDelete={deleteMutation.mutate}
+        onEdit={handleEditTransaction}
+        isDeleting={deleteMutation.isPending}
       />
 
       {isFormOpen && (
         <TransactionForm 
           onSave={handleFormClose} 
           onCancel={handleFormClose} 
-          initialData={editingTransaction} // Pass data for editing
+          initialData={editingTransaction}
         />
       )}
     </div>
