@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { TrendingUp, TrendingDown, DollarSign, Calendar } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface Transaction {
   id: string;
@@ -27,15 +27,50 @@ export default function Reports() {
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
-});
+    select: (data) => {
+      // Transform the data to handle potential field name variations from backend
+      return data.map(transaction => ({
+        ...transaction,
+        // Ensure we have categoryId field (handle category_id from backend)
+        categoryId: transaction.categoryId || (transaction as any).category_id,
+        // Ensure we have proper type conversion if needed
+        amount: typeof transaction.amount === 'string' ? transaction.amount : String(transaction.amount),
+      }));
+    }
+  });
 
-  const { data: categories = [] } = useQuery<Category[]>({
-  queryKey: ["/api/categories"],
-});
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
 
   const { data: summary } = useQuery<Category[]>({
     queryKey: ["/api/analytics/summary"],
   });
+
+  // Debug logging to understand data structure in reports
+  useEffect(() => {
+    if (transactions.length > 0 && categories.length > 0) {
+      console.log('=== REPORTS DEBUG INFO ===');
+      console.log('Sample transaction in reports:', transactions[0]);
+      console.log('Available categories in reports:', categories.map(cat => ({ id: cat.id, name: cat.name, color: cat.color })));
+      
+      // Check for transactions with categories
+      const transactionsWithCategories = transactions.filter(t => t.categoryId);
+      console.log('Transactions with categories in reports:', transactionsWithCategories.length);
+      
+      if (transactionsWithCategories.length > 0) {
+        const sampleWithCategory = transactionsWithCategories[0];
+        const foundCategory = categories.find(cat => cat.id === sampleWithCategory.categoryId);
+        console.log('Sample transaction with category in reports:', {
+          id: sampleWithCategory.id,
+          categoryId: sampleWithCategory.categoryId,
+          foundCategory: foundCategory
+        });
+      }
+      
+      console.log('=== END REPORTS DEBUG INFO ===');
+    }
+  }, [transactions, categories]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -94,11 +129,32 @@ export default function Reports() {
   const categoryBreakdown = useMemo(() => {
     const categoryData: Record<string, { name: string; amount: number; color: string }> = {};
 
+    console.log('Building category breakdown...', {
+      transactionsCount: getTimeRangeData.length,
+      categoriesCount: categories.length
+    });
+
     getTimeRangeData.forEach((tx: Transaction) => {
       if (tx.type === 'expense') {
-        const category = categories.find((cat: Category) => cat.id === tx.categoryId);
+        // Handle both categoryId and category_id fields
+        const transactionCategoryId = tx.categoryId || (tx as any).category_id;
+        
+        console.log('Processing expense transaction:', {
+          id: tx.id,
+          categoryId: transactionCategoryId,
+          amount: tx.amount
+        });
+        
+        const category = categories.find((cat: Category) => cat.id === transactionCategoryId);
         const categoryName = category?.name || 'Uncategorized';
         const categoryColor = category?.color || '#6B7280';
+
+        console.log('Found category for transaction:', {
+          transactionCategoryId,
+          foundCategory: category,
+          categoryName,
+          categoryColor
+        });
 
         if (!categoryData[categoryName]) {
           categoryData[categoryName] = { name: categoryName, amount: 0, color: categoryColor };
@@ -108,7 +164,9 @@ export default function Reports() {
       }
     });
 
-    return Object.values(categoryData).sort((a, b) => b.amount - a.amount);
+    const result = Object.values(categoryData).sort((a, b) => b.amount - a.amount);
+    console.log('Final category breakdown:', result);
+    return result;
   }, [getTimeRangeData, categories]);
 
   const weeklySpending = useMemo(() => {
@@ -146,7 +204,8 @@ export default function Reports() {
 
   const growthRate = calculateGrowthRate();
 
-  if (transactionsLoading) {
+  // Show loading state while either transactions or categories are loading
+  if (transactionsLoading || categoriesLoading) {
     return (
       <div className="p-6" data-testid="reports-loading">
         <div className="space-y-6">
@@ -194,6 +253,22 @@ export default function Reports() {
           </Select>
         </div>
       </div>
+
+      {/* Debug info - remove this section once the issue is resolved */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-2">Reports Debug Info (Development Only):</h3>
+            <div className="text-sm space-y-1">
+              <p>Total Transactions: {transactions.length}</p>
+              <p>Filtered Transactions (Time Range): {getTimeRangeData.length}</p>
+              <p>Total Categories: {categories.length}</p>
+              <p>Category Breakdown Items: {categoryBreakdown.length}</p>
+              <p>Transactions with Categories: {transactions.filter(t => t.categoryId).length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -339,27 +414,33 @@ export default function Reports() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4 max-h-80 overflow-y-auto">
-              {categoryBreakdown.map((category, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <span className="font-medium" data-testid={`category-name-${index}`}>
-                      {category.name}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold" data-testid={`category-amount-${index}`}>
-                      {formatCurrency(category.amount)}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {((category.amount / categoryBreakdown.reduce((sum, cat) => sum + cat.amount, 0)) * 100).toFixed(1)}%
-                    </div>
-                  </div>
+              {categoryBreakdown.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No expense data available for the selected time range.
                 </div>
-              ))}
+              ) : (
+                categoryBreakdown.map((category, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="font-medium" data-testid={`category-name-${index}`}>
+                        {category.name}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold" data-testid={`category-amount-${index}`}>
+                        {formatCurrency(category.amount)}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {((category.amount / categoryBreakdown.reduce((sum, cat) => sum + cat.amount, 0)) * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
