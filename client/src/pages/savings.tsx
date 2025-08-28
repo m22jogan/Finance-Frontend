@@ -13,9 +13,9 @@ import GoalList from "@/components/savings/goal-list";
 interface SavingsGoal {
   id: string;
   name: string;
-  targetAmount: string;
-  currentAmount: string;
-  targetDate?: string | null;
+  target_amount: string;
+  current_amount: string;
+  target_date?: string | null;
 }
 
 export default function Savings() {
