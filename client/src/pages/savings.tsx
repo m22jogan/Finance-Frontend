@@ -1,160 +1,145 @@
-// client/src/pages/savings.tsx
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { Plus, Search } from "lucide-react";
 import { useState } from "react";
-import GoalForm from "@/components/savings/goal-form"; // <-- new form
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import GoalForm from "@/components/savings/goal-form";
+import GoalList from "@/components/savings/goal-list";
 
 interface SavingsGoal {
   id: string;
   name: string;
-  targetAmount: string; // stored as string for consistency with GoalForm
+  targetAmount: string;
   currentAmount: string;
   targetDate?: string | null;
 }
 
 export default function Savings() {
-  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const { toast } = useToast();
 
-  // form state
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
-
-  // fetch goals
-  const { data: goals = [], isLoading } = useQuery<SavingsGoal[]>({
+  // Fetch all goals
+  const { data: goals = [], isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
     queryKey: ["/api/savings-goals"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/savings-goals");
-      return res.json();
-    },
   });
 
-  // delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiRequest("DELETE", `/api/savings-goals/${id}`);
-      return res.json();
+      return apiRequest('DELETE', `/api/savings-goals/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
-      toast({ title: "Goal deleted", description: "Savings goal removed." });
+      toast({
+        title: "Goal deleted",
+        description: "Savings goal has been successfully deleted.",
+      });
     },
-    onError: () =>
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete goal",
+        description: error.message || "Failed to delete goal.",
         variant: "destructive",
-      }),
+      });
+    },
   });
 
-  const formatCurrency = (amount: string) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(parseFloat(amount || "0"));
+  // Filter goals based on search
+  const filteredGoals = goals.filter((goal) =>
+    goal.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const formatDate = (dateString?: string | null) =>
-    dateString
-      ? new Date(dateString).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : null;
+  const handleEditGoal = (goal: SavingsGoal) => {
+    setEditingGoal(goal);
+    setIsFormOpen(true);
+  };
 
-  if (isLoading) {
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingGoal(null);
+  };
+
+  // Show loading state while goals are loading
+  if (goalsLoading) {
     return (
-      <div className="p-6">
-        <Skeleton className="h-8 w-40" />
+      <div className="p-6" data-testid="savings-loading-page">
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <div className="flex gap-4">
+            <Skeleton className="h-10 w-64" />
+          </div>
+          <Card>
+            <CardContent className="p-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-3 py-4 border-b last:border-b-0">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-6 w-32" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-8 w-8" />
+                      <Skeleton className="h-8 w-8" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" data-testid="savings-page">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Savings Goals</h1>
-        <Button
-          onClick={() => {
-            setEditingGoalId(null); // new goal
-            setIsFormOpen(true);
-          }}
+        <Button 
           data-testid="add-goal-button"
+          onClick={() => {
+            setEditingGoal(null);
+            setIsFormOpen(true);
+          }} 
         >
-          <Plus className="h-4 w-4 mr-2" /> Add Goal
+          <Plus className="h-4 w-4 mr-2" />
+          Add Goal
         </Button>
       </div>
 
-      {/* Form modal */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search goals..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+            data-testid="search-goals"
+          />
+        </div>
+      </div>
+
+      <GoalList
+        goals={filteredGoals}
+        isLoading={goalsLoading}
+        onDelete={deleteMutation.mutate}
+        onEdit={handleEditGoal}
+        isDeleting={deleteMutation.isPending}
+      />
+
       {isFormOpen && (
-        <GoalForm
-          goalId={editingGoalId ?? undefined}
-          onClose={() => {
-            setIsFormOpen(false);
-            setEditingGoalId(null);
-          }}
+        <GoalForm 
+          onSave={handleFormClose} 
+          onCancel={handleFormClose} 
+          initialData={editingGoal}
         />
       )}
-
-      {/* Goals list */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {goals.map((goal) => {
-          const current = parseFloat(goal.currentAmount || "0");
-          const target = parseFloat(goal.targetAmount || "0");
-          const percentage = target > 0 ? (current / target) * 100 : 0;
-
-          return (
-            <Card key={goal.id}>
-              <CardHeader className="flex justify-between items-center">
-                <CardTitle>{goal.name}</CardTitle>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setEditingGoalId(goal.id);
-                      setIsFormOpen(true);
-                    }}
-                    data-testid={`edit-goal-${goal.id}`}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteMutation.mutate(goal.id)}
-                    data-testid={`delete-goal-${goal.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p>
-                  {formatCurrency(goal.currentAmount)} of{" "}
-                  {formatCurrency(goal.targetAmount)}
-                </p>
-                <div className="mt-2 bg-gray-200 h-3 rounded">
-                  <div
-                    className="h-3 rounded bg-blue-500 transition-all"
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                  />
-                </div>
-                {goal.targetDate && (
-                  <p className="text-sm">
-                    Target: {formatDate(goal.targetDate)}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
     </div>
   );
 }
