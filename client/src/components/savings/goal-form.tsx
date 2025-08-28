@@ -33,6 +33,14 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
   const [targetDate, setTargetDate] = useState<Date | undefined>(
     initialData?.target_date ? new Date(initialData.target_date) : undefined
   );
+  
+  // State for the text input and the calendar's month view
+  const [dateInput, setDateInput] = useState(
+    initialData?.target_date ? format(new Date(initialData.target_date), 'yyyy-MM-dd') : ''
+  );
+  const [month, setMonth] = useState<Date>(
+    initialData?.target_date ? new Date(initialData.target_date) : new Date()
+  );
 
   const { toast } = useToast();
 
@@ -79,21 +87,33 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
   });
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Adjust for timezone offset to prevent date from being off by one day
-    const dateValue = e.target.value;
-    // An empty string in the input should clear the date
-    if (!dateValue) {
-      setTargetDate(undefined);
-      return;
-    }
-    const date = new Date(`${dateValue}T00:00:00`);
+    const value = e.target.value;
+    setDateInput(value); // Update the string input on every keystroke
 
-    if (!isNaN(date.getTime())) {
-      setTargetDate(date);
+    // Only update the actual date object if the input is a complete date
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const date = new Date(`${value}T00:00:00`);
+      if (!isNaN(date.getTime())) {
+        setTargetDate(date);
+        setMonth(date); // Sync calendar to what was typed
+      } else {
+        setTargetDate(undefined);
+      }
     } else {
       setTargetDate(undefined);
     }
   };
+
+  const handleCalendarSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setTargetDate(selectedDate);
+      setDateInput(format(selectedDate, 'yyyy-MM-dd'));
+    } else {
+      setTargetDate(undefined);
+      setDateInput('');
+    }
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,7 +226,7 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
                   <Input
                     type="text"
                     placeholder="YYYY-MM-DD"
-                    value={targetDate ? format(targetDate, "yyyy-MM-dd") : ""}
+                    value={dateInput}
                     onChange={handleDateChange}
                     data-testid="goal-target-date-input"
                     className="pr-10"
@@ -221,7 +241,9 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
                   <Calendar
                     mode="single"
                     selected={targetDate}
-                    onSelect={setTargetDate}
+                    onSelect={handleCalendarSelect}
+                    month={month}
+                    onMonthChange={setMonth}
                     disabled={(date) => date < new Date()}
                     initialFocus
                   />
