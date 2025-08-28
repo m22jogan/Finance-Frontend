@@ -26,6 +26,12 @@ interface CategorySpending {
   percentage: number;
 }
 
+interface SpendingChartData {
+  name: string;
+  amount: number;
+  color: string;
+}
+
 // Helper function to categorize transactions
 function calculateCategorySpendingFromTransactions(transactions: Transaction[]): CategorySpending[] {
   const categoryMap = new Map<string, number>();
@@ -33,9 +39,9 @@ function calculateCategorySpendingFromTransactions(transactions: Transaction[]):
 
   transactions.forEach(transaction => {
     // Only count expenses (negative amounts or positive amounts for expenses)
-    const amount = Math.abs(transaction.amount);
-    if (amount > 0) {
-      const category = categorizeTransaction(transaction.description || transaction.merchant || 'Other');
+    const amount = Math.abs(parseFloat(transaction.amount));
+    if (amount > 0 && transaction.type === 'expense') {
+      const category = categorizeTransaction(transaction.description || 'Other');
       categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
       totalSpending += amount;
     }
@@ -84,6 +90,17 @@ function categorizeTransaction(description: string): string {
   return 'Other';
 }
 
+// Helper function to convert category spending to chart format
+function convertToChartData(categorySpending: CategorySpending[]): SpendingChartData[] {
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658"];
+  
+  return categorySpending.map((item, index) => ({
+    name: item.category,
+    amount: item.amount,
+    color: COLORS[index % COLORS.length]
+  }));
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -122,7 +139,8 @@ export default function Dashboard() {
         // Calculate percentages from backend data
         const totalAmount = data.reduce((sum: number, item: any) => sum + item.amount, 0);
         const categorySpendingWithPercentages = data.map((item: any) => ({
-          ...item,
+          category: item.category,
+          amount: item.amount,
           percentage: totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0
         }));
         
@@ -136,7 +154,11 @@ export default function Dashboard() {
         return [];
       }
     },
+    enabled: !summaryLoading && !transactionsLoading, // Only run after other data is loaded
   });
+
+  // Convert category spending to chart format for SpendingChart component
+  const chartData = categorySpending ? convertToChartData(categorySpending) : [];
 
   // Centralized loading state for the entire dashboard
   const isLoading = summaryLoading || transactionsLoading || budgetsLoading || goalsLoading || categorySpendingLoading;
@@ -199,13 +221,10 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6" data-testid="dashboard-page">
-      <SummaryCards 
-        summary={safeSummary as SummaryData} 
-        categorySpending={categorySpending || []}
-      />
+      <SummaryCards summary={safeSummary as SummaryData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SpendingChart />
+        <SpendingChart chartData={chartData} isLoading={categorySpendingLoading} />
         <RecentTransactions
           transactions={(transactions as Transaction[])?.slice(0, 5) || []}
           isLoading={transactionsLoading}
