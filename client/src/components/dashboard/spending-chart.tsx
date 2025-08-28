@@ -1,9 +1,11 @@
 // spending-chart.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 // Define the shape of each spending item
 interface SpendingCategory {
@@ -15,10 +17,17 @@ interface SpendingCategory {
 interface SpendingChartProps {
   chartData: SpendingCategory[];
   isLoading: boolean;
+  selectedPeriod: string;
+  onPeriodChange: (period: string) => void;
 }
 
-export default function SpendingChart({ chartData = [], isLoading }: SpendingChartProps) {
-  const [period, setPeriod] = useState("this-month");
+export default function SpendingChart({ 
+  chartData = [], 
+  isLoading, 
+  selectedPeriod, 
+  onPeriodChange 
+}: SpendingChartProps) {
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -51,11 +60,15 @@ export default function SpendingChart({ chartData = [], isLoading }: SpendingCha
   
   const totalSpending = validChartData.reduce((sum, item) => sum + item.amount, 0);
 
+  // Determine which categories to show
+  const categoriesToShow = showAllCategories ? validChartData : validChartData.slice(0, 3);
+  const hasMoreCategories = validChartData.length > 3;
+
   return (
     <Card className="bg-white dark:bg-gray-800" data-testid="spending-chart">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>Spending by Category</CardTitle>
-        <Select value={period} onValueChange={setPeriod}>
+        <Select value={selectedPeriod} onValueChange={onPeriodChange}>
           <SelectTrigger className="w-[180px]" data-testid="time-period-select">
             <SelectValue placeholder="Select a period" />
           </SelectTrigger>
@@ -93,7 +106,7 @@ export default function SpendingChart({ chartData = [], isLoading }: SpendingCha
               Total Spending: {formatCurrency(totalSpending)}
             </p>
             <div className="mt-6 space-y-3" data-testid="chart-legend">
-              {validChartData.map((item, index) => (
+              {categoriesToShow.map((item, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div
@@ -115,6 +128,30 @@ export default function SpendingChart({ chartData = [], isLoading }: SpendingCha
                   </span>
                 </div>
               ))}
+              
+              {hasMoreCategories && (
+                <div className="pt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllCategories(!showAllCategories)}
+                    className="w-full flex items-center justify-center gap-2 text-sm"
+                    data-testid="toggle-categories-button"
+                  >
+                    {showAllCategories ? (
+                      <>
+                        Show Less
+                        <ChevronUp className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        Show More ({validChartData.length - 3} more)
+                        <ChevronDown className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         ) : (
