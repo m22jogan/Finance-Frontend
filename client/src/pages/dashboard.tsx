@@ -46,6 +46,7 @@ function convertToChartData(categorySpending: CategorySpending[]): SpendingChart
 export default function Dashboard() {
   const { toast } = useToast();
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState("this-month");
 
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery<SummaryData>({
     queryKey: ["/api/analytics/summary"],
@@ -71,11 +72,28 @@ export default function Dashboard() {
 
   // Fetch category spending data from your backend
   const { data: categorySpending, isLoading: categorySpendingLoading } = useQuery<CategorySpending[]>({
-    queryKey: ["/api/analytics/spending-by-category"],
+    queryKey: ["/api/analytics/spending-by-category", selectedPeriod],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/analytics/spending-by-category');
+      let endpoint = '/api/analytics/spending-by-category';
+      
+      // Add period parameter based on selection
+      if (selectedPeriod === 'this-month') {
+        endpoint = '/api/analytics/spending-by-category/this-month';
+      } else if (selectedPeriod === 'last-month') {
+        // Calculate last month's date string (YYYY-MM format)
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const monthString = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+        endpoint = `/api/analytics/spending-by-category?month=${monthString}`;
+      } else if (selectedPeriod === 'this-year') {
+        // For this year, we might need a different endpoint or parameter
+        // For now, let's use the base endpoint (you may need to add a year parameter to your backend)
+        endpoint = '/api/analytics/spending-by-category';
+      }
+      
+      const response = await apiRequest('GET', endpoint);
       const data = await response.json();
-      console.log('Category spending data received:', data);
+      console.log(`Category spending data received for ${selectedPeriod}:`, data);
       
       // Your backend returns [{category: "Food & Dining", amount: 450.20}, ...]
       // Calculate percentages from the amounts
@@ -157,7 +175,12 @@ export default function Dashboard() {
       <SummaryCards summary={safeSummary as SummaryData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SpendingChart chartData={chartData} isLoading={categorySpendingLoading} />
+        <SpendingChart 
+          chartData={chartData} 
+          isLoading={categorySpendingLoading} 
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
         <RecentTransactions
           transactions={(transactions as Transaction[])?.slice(0, 5) || []}
           isLoading={transactionsLoading}
