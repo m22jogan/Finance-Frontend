@@ -11,9 +11,9 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 interface SavingsGoal {
   id: string;
   name: string;
-  targetAmount: string;
-  currentAmount: string;
-  targetDate?: string | null;
+  target_amount: string;
+  current_amount: string;
+  target_date?: string | null;
 }
 
 interface GoalListProps {
@@ -82,8 +82,8 @@ export default function GoalList({
         ) : (
           <ul className="space-y-6">
             {goals.map((goal) => {
-              const current = parseFloat(goal.currentAmount || "0");
-              const target = parseFloat(goal.targetAmount || "0");
+              const current = parseFloat(goal.current_amount || "0");
+              const target = parseFloat(goal.target_amount || "0");
               const percentage = target > 0 ? (current / target) * 100 : 0;
               const isCompleted = percentage >= 100;
 
@@ -109,9 +109,9 @@ export default function GoalList({
                         data-testid={`goal-item-amounts-${goal.id}`}
                       >
                         {formatCurrency(current)} of {formatCurrency(target)}
-                        {goal.targetDate && (
+                        {goal.target_date && (
                           <span className="ml-2">
-                            • Target: {formatDate(goal.targetDate)}
+                            • Target: {formatDate(goal.target_date)}
                           </span>
                         )}
                       </p>
@@ -200,11 +200,11 @@ export default function GoalList({
                     </div>
                   )}
 
-                  {goal.targetDate && !isCompleted && (
+                  {goal.target_date && !isCompleted && (
                     <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                       {(() => {
                         const today = new Date();
-                        const targetDate = new Date(goal.targetDate);
+                        const targetDate = new Date(goal.target_date);
                         const daysLeft = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                         
                         if (daysLeft < 0) {
