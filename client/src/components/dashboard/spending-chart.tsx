@@ -2,7 +2,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,12 +12,13 @@ interface SpendingCategory {
   color: string;
 }
 
-export default function SpendingChart() {
+interface SpendingChartProps {
+  chartData: SpendingCategory[];
+  isLoading: boolean;
+}
+
+export default function SpendingChart({ chartData = [], isLoading }: SpendingChartProps) {
   const [period, setPeriod] = useState("this-month");
-  
-  const { data: spendingData = [], isLoading } = useQuery<SpendingCategory[]>(
-    ["/api/analytics/spending-by-category", period],
-  );
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -40,12 +40,16 @@ export default function SpendingChart() {
     );
   }
 
-  // FIX: Filter out any invalid data items before processing.
-  // This will prevent the component from crashing on malformed data.
-  const chartData = spendingData.filter(item => item && item.name && typeof item.name === 'string' && item.amount !== undefined);
-  const totalSpending = chartData.reduce((sum, item) => sum + item.amount, 0);
-
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+  // Filter out any invalid data items before processing.
+  const validChartData = chartData.filter(item => 
+    item && 
+    item.name && 
+    typeof item.name === 'string' && 
+    item.amount !== undefined && 
+    item.amount > 0
+  );
+  
+  const totalSpending = validChartData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <Card className="bg-white dark:bg-gray-800" data-testid="spending-chart">
@@ -63,13 +67,13 @@ export default function SpendingChart() {
         </Select>
       </CardHeader>
       <CardContent>
-        {chartData.length > 0 ? (
+        {validChartData.length > 0 ? (
           <>
             <div className="h-64" data-testid="spending-chart-container">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={chartData}
+                    data={validChartData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -77,8 +81,8 @@ export default function SpendingChart() {
                     fill="#8884d8"
                     dataKey="amount"
                   >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {validChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value) => formatCurrency(Number(value))} />
@@ -89,7 +93,7 @@ export default function SpendingChart() {
               Total Spending: {formatCurrency(totalSpending)}
             </p>
             <div className="mt-6 space-y-3" data-testid="chart-legend">
-              {chartData.map((item, index) => (
+              {validChartData.map((item, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div
