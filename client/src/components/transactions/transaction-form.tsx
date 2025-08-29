@@ -68,7 +68,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
       description,
       amount: parseFloat(amount),
       type,
-      categoryId: categoryId || null, // send ID or null
+      category_id: categoryId || null, // send ID or null
       date: new Date(date).toISOString(),
     };
 
