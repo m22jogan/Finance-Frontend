@@ -1,8 +1,6 @@
-// tailwind.config.ts
-
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
@@ -80,5 +78,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
-} satisfies Config;
+  plugins: [
+    // @ts-expect-error - Tailwind plugins use CommonJS
+    (() => require("tailwindcss-animate"))(),
+    // @ts-expect-error - Tailwind plugins use CommonJS  
+    (() => require("@tailwindcss/typography"))(),
+  ],
+};
+
+export default config;
