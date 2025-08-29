@@ -32,15 +32,6 @@ interface SpendingChartData {
   color: string;
 }
 
-// Updated SavingsGoal interface to match the backend API
-interface SavingsGoal {
-  id: string;
-  name: string;
-  target_amount: string;
-  current_amount: string;
-  target_date?: string | null;
-}
-
 // Helper function to convert category spending to chart format
 function convertToChartData(categorySpending: CategorySpending[]): SpendingChartData[] {
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658"];
@@ -75,29 +66,23 @@ export default function Dashboard() {
     queryKey: ["/api/budgets"],
   });
 
-  // Fetch savings goals using the updated interface
   const { data: savingsGoals, isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
     queryKey: ['/api/savings-goals'],
   });
 
-  // Fetch category spending data from your backend
   const { data: categorySpending, isLoading: categorySpendingLoading } = useQuery<CategorySpending[]>({
     queryKey: ["/api/analytics/spending-by-category", selectedPeriod],
     queryFn: async () => {
       let endpoint = '/api/analytics/spending-by-category';
       
-      // Add period parameter based on selection
       if (selectedPeriod === 'this-month') {
         endpoint = '/api/analytics/spending-by-category/this-month';
       } else if (selectedPeriod === 'last-month') {
-        // Calculate last month's date string (YYYY-MM format)
         const now = new Date();
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const monthString = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
         endpoint = `/api/analytics/spending-by-category?month=${monthString}`;
       } else if (selectedPeriod === 'this-year') {
-        // For this year, we might need a different endpoint or parameter
-        // For now, let's use the base endpoint (you may need to add a year parameter to your backend)
         endpoint = '/api/analytics/spending-by-category';
       }
       
@@ -105,26 +90,19 @@ export default function Dashboard() {
       const data = await response.json();
       console.log(`Category spending data received for ${selectedPeriod}:`, data);
       
-      // Your backend returns [{category: "Food & Dining", amount: 450.20}, ...]
-      // Calculate percentages from the amounts
       const totalAmount = data.reduce((sum: number, item: any) => sum + item.amount, 0);
-      const categorySpendingWithPercentages = data.map((item: any) => ({
+      return data.map((item: any) => ({
         category: item.category,
         amount: item.amount,
         percentage: totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0
       }));
-      
-      return categorySpendingWithPercentages;
     },
   });
 
-  // Convert category spending to chart format for SpendingChart component
   const chartData = categorySpending ? convertToChartData(categorySpending) : [];
 
-  // Centralized loading state for the entire dashboard
   const isLoading = summaryLoading || transactionsLoading || budgetsLoading || goalsLoading || categorySpendingLoading;
 
-  // Handle a loading state for the entire page
   if (isLoading) {
     return (
       <div className="p-6 space-y-6" data-testid="dashboard-loading">
@@ -146,7 +124,6 @@ export default function Dashboard() {
     );
   }
 
-  // Handle a "no data" state after loading
   const hasData = summary && (summary.totalBalance > 0 || summary.monthlySpending > 0 || summary.budgetRemaining > 0);
 
   if (!hasData) {
@@ -163,22 +140,20 @@ export default function Dashboard() {
     );
   }
 
-  const safeSummary: SummaryData & { categorySpending?: CategorySpending[] } = {
+  interface SummaryWithCategorySpending extends SummaryData {
+    categorySpending?: CategorySpending[];
+  }
+
+  const safeSummary: SummaryWithCategorySpending = {
     totalBalance: summary?.totalBalance ?? 0,
     monthlySpending: summary?.monthlySpending ?? 0,
     savingsProgress: summary?.savingsProgress ?? 0,
     budgetRemaining: summary?.budgetRemaining ?? 0,
-    savingsGoals: summary?.savingsGoals || [],
     categorySpending: categorySpending || [],
   };
 
-  const handleAddTransactionClick = () => {
-    setIsAddTransactionModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsAddTransactionModalOpen(false);
-  };
+  const handleAddTransactionClick = () => setIsAddTransactionModalOpen(true);
+  const handleCloseModal = () => setIsAddTransactionModalOpen(false);
 
   return (
     <div className="p-6 space-y-6" data-testid="dashboard-page">
