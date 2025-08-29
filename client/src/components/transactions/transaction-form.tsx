@@ -1,5 +1,5 @@
 // src/components/transactions/transaction-form.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,73 +13,62 @@ import type { Category } from "@shared/schema";
 interface TransactionFormProps {
   onSave: () => void;
   onCancel: () => void;
-  initialData?: any; // Optional: for editing existing transactions
+  initialData?: any; // Optional for editing
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, initialData }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData?.amount || '');
   const [type, setType] = useState(initialData?.type || 'expense'); // 'income' or 'expense'
-  const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
-  const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [categoryId, setCategoryId] = useState(initialData?.categoryId || ''); // store ID
+  const [date, setDate] = useState(
+    initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  );
 
   const { toast } = useToast();
 
+  // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
 
+  // Mutation for adding a new transaction
   const addTransactionMutation = useMutation({
-    mutationFn: async (newTransaction: Omit<any, 'id'>) => {
-      return apiRequest('POST', '/api/transactions', newTransaction);
-    },
+    mutationFn: async (newTransaction: Omit<any, 'id'>) => apiRequest('POST', '/api/transactions', newTransaction),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
-      toast({
-        title: "Transaction added",
-        description: "New transaction has been successfully recorded.",
-      });
-      onSave(); // Close the form
+      toast({ title: "Transaction added", description: "New transaction has been successfully recorded." });
+      onSave();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add transaction.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to add transaction.", variant: "destructive" });
     },
   });
 
+  // Mutation for editing an existing transaction
   const updateTransactionMutation = useMutation({
-    mutationFn: async (updatedTransaction: any) => {
-      return apiRequest('PUT', `/api/transactions/${updatedTransaction.id}`, updatedTransaction);
-    },
+    mutationFn: async (updatedTransaction: any) => 
+      apiRequest('PUT', `/api/transactions/${updatedTransaction.id}`, updatedTransaction),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
-      toast({
-        title: "Transaction updated",
-        description: "Transaction has been successfully updated.",
-      });
-      onSave(); // Close the form
+      toast({ title: "Transaction updated", description: "Transaction has been successfully updated." });
+      onSave();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update transaction.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to update transaction.", variant: "destructive" });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const transactionData = {
       description,
       amount: parseFloat(amount),
       type,
-      categoryId: categoryId || undefined, // Send undefined if no category selected
+      categoryId: categoryId || null, // send ID or null
       date: new Date(date).toISOString(),
     };
 
@@ -89,6 +78,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
       addTransactionMutation.mutate(transactionData);
     }
   };
+
+  // Keep selected category name synced with ID for display
+  const selectedCategoryName = categoryId ? categories.find(cat => cat.id === categoryId)?.name : "No Category";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -136,7 +128,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
               <Label htmlFor="category">Category</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger id="category">
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={selectedCategoryName} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">No Category</SelectItem>
@@ -161,10 +153,18 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
           </form>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel} disabled={addTransactionMutation.isPending || updateTransactionMutation.isPending}>
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={addTransactionMutation.isPending || updateTransactionMutation.isPending}
+          >
             Cancel
           </Button>
-          <Button type="submit" form="transaction-form" onClick={handleSubmit} disabled={addTransactionMutation.isPending || updateTransactionMutation.isPending}>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={addTransactionMutation.isPending || updateTransactionMutation.isPending}
+          >
             {initialData ? "Save Changes" : "Add Transaction"}
           </Button>
         </CardFooter>
