@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/auth/login", { email, password });
+      const res = await apiRequest("POST", "/api/v1/auth/login", { email, password });
       if (!res.ok) {
         throw new Error("Login failed");
       }
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const res = await apiRequest("GET", "/api/auth/me");
+        const res = await apiRequest("GET", "/api/v1/auth/me");
         if (res.ok) {
           const data = await res.json();
           // When fetching, also include the token in the user state
