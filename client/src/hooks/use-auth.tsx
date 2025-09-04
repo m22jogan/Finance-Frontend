@@ -9,24 +9,48 @@ interface User {
 }
 
 interface AuthContextType {
-  user: User | undefined;
+  user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: undefined,
+  user: null,
   loading: true,
   login: async () => {},
   logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | undefined>();
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [_, navigate] = useLocation();
 
+  // Fetch current user
+  const fetchUser = async () => {
+    setLoading(true);
+    try {
+      const res = await apiRequest("GET", "/api/v1/auth/me");
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+      const data = await res.json();
+      setUser({ id: data.id, email: data.email });
+    } catch (err) {
+      console.warn("Failed to fetch user:", err);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  // Login function
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
@@ -34,49 +58,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) throw new Error("Login failed");
 
       const data = await res.json();
-      // Cookie is set automatically by the backend (HttpOnly, Secure)
+      // Cookie is set automatically by backend (HttpOnly, Secure, SameSite=None)
       setUser({ id: data.user.id, email: data.user.email });
       navigate("/dashboard");
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
+    } catch (err) {
+      console.error("Login error:", err);
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
+  // Logout function
   const logout = async () => {
+    setLoading(true);
     try {
-      // Optional: if you add a /logout endpoint, call it here to clear cookie
-      await apiRequest("POST", "/api/v1/auth/logout");
+      await apiRequest("POST", "/api/v1/auth/logout"); // optional backend call
     } catch (err) {
       console.warn("Logout request failed:", err);
     } finally {
-      setUser(undefined);
+      setUser(null);
+      setLoading(false);
       navigate("/login");
     }
   };
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await apiRequest("GET", "/api/v1/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          setUser({ id: data.id, email: data.email });
-        } else {
-          setUser(undefined);
-        }
-      } catch (error) {
-        console.error("Failed to load user:", error);
-        setUser(undefined);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
@@ -87,8 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

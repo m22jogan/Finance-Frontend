@@ -8,6 +8,10 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/**
+ * Generic API request wrapper using fetch.
+ * Cookies are sent automatically with `credentials: "include"`.
+ */
 export async function apiRequest(
   method: string,
   url: string,
@@ -16,19 +20,19 @@ export async function apiRequest(
   const apiUrl = import.meta.env.VITE_API_URL;
   const fullUrl = `${apiUrl}${url}`;
 
-  const headers: HeadersInit = {};
-
   const options: RequestInit = {
     method,
-    headers,
-    credentials: "include", // 🔑 Send cookies for auth
+    credentials: "include", // 🔑 Send cookies cross-origin
   };
 
-  if (data instanceof FormData) {
-    options.body = data;
-  } else if (data) {
-    headers["Content-Type"] = "application/json";
+  // Only set JSON Content-Type if sending JSON
+  if (data && !(data instanceof FormData)) {
+    options.headers = {
+      "Content-Type": "application/json",
+    };
     options.body = JSON.stringify(data);
+  } else if (data instanceof FormData) {
+    options.body = data; // Let browser set multipart/form-data boundary
   }
 
   const res = await fetch(fullUrl, options);
@@ -38,19 +42,23 @@ export async function apiRequest(
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 
+/**
+ * Creates a query function for React Query that handles 401s.
+ * Uses cookies, so no Authorization header needed.
+ */
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+  ({ on401 }) =>
   async ({ queryKey }) => {
     const apiUrl = import.meta.env.VITE_API_URL;
-    const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
+    const fullUrl = `${apiUrl}${queryKey.join("/")}`;
 
     const res = await fetch(fullUrl, {
       credentials: "include", // 🔑 Cookies handle auth
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+    if (res.status === 401 && on401 === "returnNull") {
       return null;
     }
 
@@ -58,13 +66,13 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// React Query client
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
       staleTime: Infinity,
+      refetchOnWindowFocus: false,
       retry: false,
     },
     mutations: {
