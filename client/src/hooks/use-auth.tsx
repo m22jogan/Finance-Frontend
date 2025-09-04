@@ -1,4 +1,3 @@
-// src/hooks/use-auth.tsx
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -13,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -28,26 +29,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [_, navigate] = useLocation();
 
   // Fetch current user
-  const fetchUser = async () => {
+  const refreshUser = async () => {
     setLoading(true);
     try {
       const res = await apiRequest("GET", "/api/v1/auth/me");
-      if (!res.ok) {
-        setUser(null);
-        return;
-      }
       const data = await res.json();
       setUser({ id: data.id, email: data.email });
-    } catch (err) {
-      console.warn("Failed to fetch user:", err);
-      setUser(null);
+    } catch {
+      setUser(null); // Not authenticated
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUser();
+    refreshUser();
   }, []);
 
   // Login function
@@ -55,11 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const res = await apiRequest("POST", "/api/v1/auth/login", { email, password });
-      if (!res.ok) throw new Error("Login failed");
-
-      const data = await res.json();
-      // Cookie is set automatically by backend (HttpOnly, Secure, SameSite=None)
-      setUser({ id: data.user.id, email: data.user.email });
+      await refreshUser(); // Fetch fresh user info
       navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
@@ -73,9 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setLoading(true);
     try {
-      await apiRequest("POST", "/api/v1/auth/logout"); // optional backend call
+      await apiRequest("POST", "/api/v1/auth/logout"); // clears cookie
     } catch (err) {
-      console.warn("Logout request failed:", err);
+      console.warn("Logout failed:", err);
     } finally {
       setUser(null);
       setLoading(false);
@@ -84,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
