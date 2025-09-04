@@ -1,4 +1,4 @@
-// src/lib/queryClient.ts (No changes needed)
+// src/lib/queryClient.ts
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
@@ -16,19 +16,12 @@ export async function apiRequest(
   const apiUrl = import.meta.env.VITE_API_URL;
   const fullUrl = `${apiUrl}${url}`;
 
-  // Get the token from local storage
-  const token = localStorage.getItem("auth_token");
-
   const headers: HeadersInit = {};
-  // If the token exists, add the Authorization header
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   const options: RequestInit = {
     method,
     headers,
-    credentials: "include",
+    credentials: "include", // 🔑 Send cookies for auth
   };
 
   if (data instanceof FormData) {
@@ -44,6 +37,7 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -52,15 +46,8 @@ export const getQueryFn: <T>(options: {
     const apiUrl = import.meta.env.VITE_API_URL;
     const fullUrl = `${apiUrl}${queryKey.join("/") as string}`;
 
-    const token = localStorage.getItem("auth_token");
-    const headers: HeadersInit = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
     const res = await fetch(fullUrl, {
-      headers,
-      credentials: "include",
+      credentials: "include", // 🔑 Cookies handle auth
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
