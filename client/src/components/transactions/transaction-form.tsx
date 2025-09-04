@@ -69,7 +69,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
       amount: parseFloat(amount),
       type,
       category_id: categoryId || null, // send ID or null
-      date: new Date(date).toISOString(),
+      date: date, // Send date as YYYY-MM-DD string instead of ISO datetime
     };
 
     if (initialData?.id) {
