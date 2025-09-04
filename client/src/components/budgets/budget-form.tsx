@@ -85,12 +85,12 @@ export default function BudgetForm({ onClose, budgetId }: BudgetFormProps) {
 
   // Typed categories
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/v1/categories"],
   });
 
   // Typed budget
   const { data: budget } = useQuery<Budget>({
-    queryKey: ["/api/budgets", budgetId],
+    queryKey: ["/api/v1/budgets", budgetId],
     enabled: !!budgetId,
   });
 
@@ -116,13 +116,13 @@ export default function BudgetForm({ onClose, budgetId }: BudgetFormProps) {
       };
 
       if (budgetId) {
-        return apiRequest("PUT", `/api/budgets/${budgetId}`, budgetData);
+        return apiRequest("PUT", `/api/v1/budgets/${budgetId}`, budgetData);
       } else {
-        return apiRequest("POST", "/api/budgets", budgetData);
+        return apiRequest("POST", "/api/v1/budgets", budgetData);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/budgets"] });
       toast({
         title: budgetId ? "Budget updated" : "Budget created",
         description: `Budget has been successfully ${

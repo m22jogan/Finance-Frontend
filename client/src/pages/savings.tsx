@@ -26,15 +26,15 @@ export default function Savings() {
 
   // Fetch all goals
   const { data: goals = [], isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
-    queryKey: ["/api/savings-goals"],
+    queryKey: ["/api/v1/savings-goals"],
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest('DELETE', `/api/savings-goals/${id}`);
+      return apiRequest('DELETE', `/api/v1/savings-goals/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/savings-goals"] });
       toast({
         title: "Goal deleted",
         description: "Savings goal has been successfully deleted.",

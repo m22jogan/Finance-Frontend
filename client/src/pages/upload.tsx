@@ -42,7 +42,7 @@ export default function Upload() {
       }, 200);
 
       try {
-        const response = await apiRequest('POST', '/api/upload/csv', formData);
+        const response = await apiRequest('POST', '/api/v1/transactions/upload/csv', formData);
         clearInterval(progressInterval);
         setUploadProgress(100);
         return response.json();
@@ -63,9 +63,9 @@ export default function Upload() {
         description: `${data.count} transactions processed`,
       });
       
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/spending-by-category"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/spending-by-category"] });
     },
     onError: (error: any) => {
       setUploadResult({

@@ -13,8 +13,8 @@ export default function CsvUpload() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Check if a token exists before attempting to upload
-      if (!user?.token) throw new Error("User not authenticated");
+      // Check if a user object exists before attempting to upload
+      if (!user) throw new Error("User not authenticated");
 
       const formData = new FormData();
       formData.append("file", file);
@@ -25,8 +25,7 @@ export default function CsvUpload() {
       }, 100);
 
       try {
-        // Corrected line: removed userId from the arguments as it's handled in apiRequest
-        const response = await apiRequest("POST", "/api/upload/csv", formData);
+        const response = await apiRequest("POST", "/api/v1/transactions/upload/csv", formData);
         clearInterval(progressInterval);
 
         setUploadProgress(100);
@@ -67,10 +66,10 @@ export default function CsvUpload() {
       />
       <Button
         onClick={handleButtonClick}
-        disabled={!user?.token || uploadMutation.isPending}
+        disabled={!user || uploadMutation.isPending}
         data-testid="choose-file-button"
       >
-        {user?.token ? "Choose File" : "Loading user..."}
+        {user ? "Choose File" : "Loading user..."}
       </Button>
       {uploadMutation.isPending && (
         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">

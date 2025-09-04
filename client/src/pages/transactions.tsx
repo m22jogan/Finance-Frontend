@@ -22,7 +22,7 @@ export default function Transactions() {
 
   // Fetch all transactions
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
+    queryKey: ["/api/v1/transactions"],
     select: (data) => {
       // Transform the data to handle potential field name variations from backend
       return data.map(transaction => ({
@@ -37,7 +37,7 @@ export default function Transactions() {
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/v1/categories"],
   });
 
   // Debug logging to understand data structure
@@ -72,11 +72,11 @@ export default function Transactions() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest('DELETE', `/api/transactions/${id}`);
+      return apiRequest('DELETE', `/api/v1/transactions/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/summary"] });
       toast({
         title: "Transaction deleted",
         description: "Transaction has been successfully deleted.",

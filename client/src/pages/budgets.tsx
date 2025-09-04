@@ -23,15 +23,15 @@ export default function Budgets() {
   const { toast } = useToast();
 
 const { data: budgets = [], isLoading } = useQuery<Budget[]>({
-  queryKey: ["/api/budgets"],
+  queryKey: ["/api/v1/budgets"],
 });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest('DELETE', `/api/budgets/${id}`);
+      return apiRequest('DELETE', `/api/v1/budgets/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/budgets"] });
       toast({
         title: "Budget deleted",
         description: "Budget has been successfully deleted",

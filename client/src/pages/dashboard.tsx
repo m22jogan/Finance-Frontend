@@ -49,9 +49,9 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("this-month");
 
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery<SummaryData>({
-    queryKey: ["/api/analytics/summary"],
+    queryKey: ["/api/v1/analytics/summary"],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/analytics/summary');
+      const response = await apiRequest('GET', '/api/v1/analytics/summary');
       const data = await response.json();
       console.log('Summary data received:', data);
       return data;
@@ -59,31 +59,31 @@ export default function Dashboard() {
   });
 
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery<Transaction[]>({
-    queryKey: ["/api/analytics/recent-transactions"],
+    queryKey: ["/api/v1/analytics/recent-transactions"],
   });
 
   const { data: budgets, isLoading: budgetsLoading, error: budgetsError } = useQuery<Budget[]>({
-    queryKey: ["/api/budgets"],
+    queryKey: ["/api/v1/budgets"],
   });
 
   const { data: savingsGoals, isLoading: goalsLoading } = useQuery<SavingsGoal[]>({
-    queryKey: ['/api/savings-goals'],
+    queryKey: ['/api/v1/savings-goals'],
   });
 
   const { data: categorySpending, isLoading: categorySpendingLoading } = useQuery<CategorySpending[]>({
-    queryKey: ["/api/analytics/spending-by-category", selectedPeriod],
+    queryKey: ["/api/v1/analytics/spending-by-category", selectedPeriod],
     queryFn: async () => {
-      let endpoint = '/api/analytics/spending-by-category';
+      let endpoint = '/api/v1/analytics/spending-by-category';
       
       if (selectedPeriod === 'this-month') {
-        endpoint = '/api/analytics/spending-by-category/this-month';
+        endpoint = '/api/v1/analytics/spending-by-category/this-month';
       } else if (selectedPeriod === 'last-month') {
         const now = new Date();
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const monthString = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
-        endpoint = `/api/analytics/spending-by-category?month=${monthString}`;
+        endpoint = `/api/v1/analytics/spending-by-category?month=${monthString}`;
       } else if (selectedPeriod === 'this-year') {
-        endpoint = '/api/analytics/spending-by-category';
+        endpoint = '/api/v1/analytics/spending-by-category';
       }
       
       const response = await apiRequest('GET', endpoint);

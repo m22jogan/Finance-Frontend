@@ -46,10 +46,10 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
 
   const addGoalMutation = useMutation({
     mutationFn: async (newGoal: Omit<SavingsGoal, 'id'>) => {
-      return apiRequest('POST', '/api/savings-goals', newGoal);
+      return apiRequest('POST', '/api/v1/savings-goals', newGoal);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/savings-goals"] });
       toast({
         title: "Goal created",
         description: "New savings goal has been successfully created.",
@@ -67,10 +67,10 @@ const GoalForm: React.FC<GoalFormProps> = ({ onSave, onCancel, initialData }) =>
 
   const updateGoalMutation = useMutation({
     mutationFn: async (updatedGoal: SavingsGoal) => {
-      return apiRequest('PUT', `/api/savings-goals/${updatedGoal.id}`, updatedGoal);
+      return apiRequest('PUT', `/api/v1/savings-goals/${updatedGoal.id}`, updatedGoal);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/savings-goals"] });
       toast({
         title: "Goal updated",
         description: "Savings goal has been successfully updated.",

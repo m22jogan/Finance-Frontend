@@ -29,15 +29,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/v1/categories"],
   });
 
   // Mutation for adding a new transaction
   const addTransactionMutation = useMutation({
-    mutationFn: async (newTransaction: Omit<any, 'id'>) => apiRequest('POST', '/api/transactions', newTransaction),
+    mutationFn: async (newTransaction: Omit<any, 'id'>) => apiRequest('POST', '/api/v1/transactions', newTransaction),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/summary"] });
       toast({ title: "Transaction added", description: "New transaction has been successfully recorded." });
       onSave();
     },
@@ -49,10 +49,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onCancel, ini
   // Mutation for editing an existing transaction
   const updateTransactionMutation = useMutation({
     mutationFn: async (updatedTransaction: any) => 
-      apiRequest('PUT', `/api/transactions/${updatedTransaction.id}`, updatedTransaction),
+      apiRequest('PUT', `/api/v1/transactions/${updatedTransaction.id}`, updatedTransaction),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/summary"] });
       toast({ title: "Transaction updated", description: "Transaction has been successfully updated." });
       onSave();
     },

@@ -53,7 +53,7 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
   // NEW: `useMutation` hook to handle the API call for updating the goal
   const mutation = useMutation({
     mutationFn: ({ goalId, amount }: { goalId: string; amount: number }) => {
-      return apiRequest('PATCH', `/api/savings-goals/${goalId}/add-funds`, { amount });
+      return apiRequest('PATCH', `/api/v1/savings-goals/${goalId}/add-funds`, { amount });
     },
     onSuccess: () => {
       toast({
@@ -61,8 +61,8 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
         description: "Funds have been added to your goal.",
       });
       // After a successful update, refetch the savings goals to update the UI
-      queryClient.invalidateQueries({ queryKey: ["/api/savings-goals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/summary"] }); // Also refetch summary data
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/summary"] }); // Also refetch summary data
       handleCloseModal();
     },
     onError: (error) => {

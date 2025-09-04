@@ -26,7 +26,7 @@ export default function Reports() {
   const [reportType, setReportType] = useState("spending-trends");
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
+    queryKey: ["/api/v1/transactions"],
     select: (data) => {
       // Transform the data to handle potential field name variations from backend
       return data.map(transaction => ({
@@ -40,11 +40,11 @@ export default function Reports() {
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/v1/categories"],
   });
 
   const { data: summary } = useQuery<Category[]>({
-    queryKey: ["/api/analytics/summary"],
+    queryKey: ["/api/v1/analytics/summary"],
   });
 
   // Debug logging to understand data structure in reports
