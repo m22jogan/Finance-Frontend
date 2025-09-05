@@ -53,7 +53,7 @@ export default function SavingsGoals({ goals, isLoading }: SavingsGoalsProps) {
   // NEW: `useMutation` hook to handle the API call for updating the goal
   const mutation = useMutation({
     mutationFn: ({ goalId, amount }: { goalId: string; amount: number }) => {
-      return apiRequest('PATCH', `/api/v1/savings-goals/${goalId}/add-funds`, { amount });
+      return apiRequest('PUT', `/api/v1/savings-goals/${goalId}/add-funds`, { amount });
     },
     onSuccess: () => {
       toast({
